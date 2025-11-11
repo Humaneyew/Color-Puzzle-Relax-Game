@@ -3,9 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../game_board.dart';
-import '../models/game_state.dart';
-import '../widgets/gradient_tile.dart';
+import '../components/gradient_tile.dart';
+import '../data/tile.dart';
+import '../logic/game_board_controller.dart';
+import '../logic/game_session.dart';
 import 'level_complete_screen.dart';
 
 class GameScreen extends StatefulWidget {
@@ -65,14 +66,17 @@ class _GameScreenState extends State<GameScreen> {
       final level = session.currentLevel;
       if (level != null) {
         session.rewardPlayer();
-        session.recordCompletion(level, controller.moveCount);
+        final result = session.recordCompletion(
+          level,
+          controller.moveCount,
+          duration: DateTime.now().difference(_startedAt),
+          hintsUsed: _hintsUsed,
+        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (_) => LevelCompleteScreen(
               level: level,
-              moves: controller.moveCount,
-              hintsUsed: _hintsUsed,
-              duration: DateTime.now().difference(_startedAt),
+              result: result,
             ),
           ),
         );
