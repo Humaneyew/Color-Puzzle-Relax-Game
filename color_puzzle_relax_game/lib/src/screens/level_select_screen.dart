@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/game_state.dart';
-import '../models/level.dart';
+import '../data/gradient_puzzle_level.dart';
+import '../logic/game_session.dart';
 import 'game_screen.dart';
 
 class LevelSelectScreen extends StatelessWidget {

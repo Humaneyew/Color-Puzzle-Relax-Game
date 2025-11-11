@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import 'models/game_state.dart';
-import 'models/level.dart';
-import 'screens/level_select_screen.dart';
-import 'services/ad_service.dart';
-import 'services/sound_service.dart';
-import 'theme.dart';
+import 'src/logic/game_session.dart';
+import 'src/data/gradient_puzzle_level.dart';
+import 'src/screens/level_select_screen.dart';
+import 'src/services/ad_service.dart';
+import 'src/services/sound_service.dart';
+import 'src/theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

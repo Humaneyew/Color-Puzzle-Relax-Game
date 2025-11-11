@@ -1,11 +1,13 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../game_board.dart';
-import '../models/game_state.dart';
-import '../widgets/gradient_tile.dart';
+import '../components/gradient_tile.dart';
+import '../data/gradient_tile.dart';
+import '../data/gradient_puzzle_level.dart';
+import '../logic/game_board_controller.dart';
+import '../logic/game_session.dart';
 import 'level_complete_screen.dart';
 
 class GameScreen extends StatefulWidget {
@@ -20,13 +22,6 @@ class _GameScreenState extends State<GameScreen> {
   int _observedInvalidMoves = 0;
   int _highlightedIndex = -1;
   int _hintsUsed = 0;
-  late DateTime _startedAt;
-
-  @override
-  void initState() {
-    super.initState();
-    _startedAt = DateTime.now();
-  }
 
   @override
   void didChangeDependencies() {
@@ -44,6 +39,7 @@ class _GameScreenState extends State<GameScreen> {
     _attachedController = controller;
     if (controller != null) {
       _observedInvalidMoves = controller.invalidMoves;
+      _hintsUsed = 0;
       controller.addListener(_handleBoardChanged);
     }
   }
@@ -72,7 +68,7 @@ class _GameScreenState extends State<GameScreen> {
               level: level,
               moves: controller.moveCount,
               hintsUsed: _hintsUsed,
-              duration: DateTime.now().difference(_startedAt),
+              duration: controller.elapsed,
             ),
           ),
         );
@@ -371,9 +367,9 @@ class _BoardView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final size = min(constraints.maxWidth, constraints.maxHeight);
+        final size = math.min(constraints.maxWidth, constraints.maxHeight);
         final tileSize = size / level.gridSize;
-        final tileExtent = max(24.0, tileSize - 8);
+        final tileExtent = math.max(24.0, tileSize - 8);
         return Center(
           child: SizedBox(
             width: tileSize * level.gridSize,
