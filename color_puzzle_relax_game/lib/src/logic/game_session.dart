@@ -1,18 +1,37 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/game_state_models.dart';
 import '../data/gradient_puzzle_level.dart';
+import '../data/level_progress.dart';
 import 'game_board_controller.dart';
 import '../services/ad_service.dart';
+import '../services/progress_storage.dart';
 
 class GameSession extends ChangeNotifier {
-  GameSession({required this.levels, required AdService adService})
-      : _adService = adService {
-    selectLevel(levels.first);
+  GameSession({
+    required this.levels,
+    required AdService adService,
+    required ProgressStorage progressStorage,
+    LevelProgress initialProgress = const LevelProgress.initial(),
+  })  : _adService = adService,
+        _progressStorage = progressStorage,
+        _progress = initialProgress,
+        _highestUnlocked = initialProgress.highestUnlockedLevelIndex,
+        _bestScores = Map<String, int>.from(initialProgress.bestScores),
+        _completedLevels = Set<String>.from(initialProgress.completedLevelIds) {
+    if (levels.isNotEmpty) {
+      _highestUnlocked =
+          _highestUnlocked.clamp(0, levels.length - 1) as int;
+      final startIndex = _highestUnlocked;
+      selectLevel(levels[startIndex]);
+    }
   }
 
   final List<GradientPuzzleLevel> levels;
   final AdService _adService;
+  final ProgressStorage _progressStorage;
 
   GradientPuzzleLevel? _currentLevel;
   GameBoardController? _controller;
@@ -22,7 +41,9 @@ class GameSession extends ChangeNotifier {
   int _hints = 3;
   int _rewards = 0;
   int _highestUnlocked = 0;
-  final Map<String, int> _bestScores = {};
+  final Map<String, int> _bestScores;
+  final Set<String> _completedLevels;
+  LevelProgress _progress;
   GameResult? _lastResult;
 
   GradientPuzzleLevel? get currentLevel => _currentLevel;
@@ -40,6 +61,8 @@ class GameSession extends ChangeNotifier {
   int get highestUnlocked => _highestUnlocked;
 
   int? bestScoreForLevel(String levelId) => _bestScores[levelId];
+
+  LevelProgress get progress => _progress;
 
   GameResult? get lastResult => _lastResult;
 
@@ -83,8 +106,13 @@ class GameSession extends ChangeNotifier {
   void recordCompletion(GradientPuzzleLevel level, int moves) {
     final levelIndex = levels.indexOf(level);
     if (levelIndex >= 0) {
-      if (_highestUnlocked < levelIndex + 1 && levelIndex + 1 < levels.length) {
-        _highestUnlocked = levelIndex + 1;
+      _completedLevels.add(level.id);
+      if (levelIndex + 1 < levels.length) {
+        if (_highestUnlocked < levelIndex + 1) {
+          _highestUnlocked = levelIndex + 1;
+        }
+      } else {
+        _highestUnlocked = levels.length - 1;
       }
       final best = _bestScores[level.id];
       if (best == null || moves < best) {
@@ -95,6 +123,7 @@ class GameSession extends ChangeNotifier {
     if (controller != null) {
       _lastResult = controller.buildResult();
     }
+    _persistProgress();
     notifyListeners();
   }
 
@@ -141,10 +170,22 @@ class GameSession extends ChangeNotifier {
     _rewards = 0;
     _highestUnlocked = 0;
     _bestScores.clear();
+    _completedLevels.clear();
+    _progress = const LevelProgress.initial();
+    unawaited(_progressStorage.clear());
     _lastResult = null;
     if (levels.isNotEmpty) {
       selectLevel(levels.first);
     }
     _controller?.reset();
+  }
+
+  void _persistProgress() {
+    _progress = LevelProgress(
+      highestUnlockedLevelIndex: _highestUnlocked,
+      bestScores: Map<String, int>.from(_bestScores),
+      completedLevelIds: Set<String>.from(_completedLevels),
+    );
+    unawaited(_progressStorage.save(_progress));
   }
 }

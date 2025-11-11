@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../components/menu_screen_header.dart';
 import '../data/gradient_puzzle_level.dart';
 import '../logic/game_session.dart';
 import 'game_screen.dart';
@@ -11,7 +12,6 @@ class LevelSelectScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<GameSession>();
-    final theme = Theme.of(context);
     final levels = session.levels;
     return Scaffold(
       body: SafeArea(
@@ -20,9 +20,12 @@ class LevelSelectScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TopBar(lives: session.lives),
-              const SizedBox(height: 24),
-              _TitleHeader(theme: theme),
+              MenuScreenHeader(
+                lives: session.lives,
+                title: 'COLOR\nPUZZLE',
+                subtitle: 'Choose a Level to Start',
+                onPrimaryAction: () {},
+              ),
               const SizedBox(height: 24),
               const _ModeCard(),
               const SizedBox(height: 24),
@@ -37,93 +40,6 @@ class LevelSelectScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.lives});
-
-  final int lives;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.favorite, color: Color(0xFFDF7F5B)),
-              const SizedBox(width: 8),
-              Text(
-                lives.toString(),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.play_arrow_rounded, size: 28),
-        ),
-      ],
-    );
-  }
-}
-
-class _TitleHeader extends StatelessWidget {
-  const _TitleHeader({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          'COLOR\nPUZZLE',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            letterSpacing: 3,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose a Level to Start',
-          style: theme.textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (var i = 0; i < 4; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Container(
-                  width: i == 1 ? 18 : 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: i == 1
-                        ? theme.colorScheme.primary
-                        : Colors.white.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
     );
   }
 }

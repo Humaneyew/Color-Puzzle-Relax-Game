@@ -4,26 +4,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'src/data/level_progress.dart';
 import 'src/logic/game_session.dart';
 import 'src/data/gradient_puzzle_level.dart';
 import 'src/screens/level_select_screen.dart';
 import 'src/services/ad_service.dart';
+import 'src/services/progress_storage.dart';
 import 'src/services/sound_service.dart';
 import 'src/theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
   final soundService = SoundService();
-  runApp(ColorPuzzleApp(soundService: soundService));
+  final progressStorage = ProgressStorage();
+  final initialProgress = await progressStorage.load();
+  runApp(
+    ColorPuzzleApp(
+      soundService: soundService,
+      progressStorage: progressStorage,
+      initialProgress: initialProgress,
+    ),
+  );
 }
 
 class ColorPuzzleApp extends StatefulWidget {
-  const ColorPuzzleApp({required this.soundService, super.key});
+  const ColorPuzzleApp({
+    required this.soundService,
+    required this.progressStorage,
+    required this.initialProgress,
+    super.key,
+  });
 
   final SoundService soundService;
+  final ProgressStorage progressStorage;
+  final LevelProgress initialProgress;
 
   @override
   State<ColorPuzzleApp> createState() => _ColorPuzzleAppState();
@@ -39,6 +56,8 @@ class _ColorPuzzleAppState extends State<ColorPuzzleApp> {
     _session = GameSession(
       levels: _createLevels(),
       adService: const AdService(),
+      progressStorage: widget.progressStorage,
+      initialProgress: widget.initialProgress,
     );
   }
 
