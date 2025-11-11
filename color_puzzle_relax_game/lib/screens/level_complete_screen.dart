@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/game_state.dart';
 import '../models/level.dart';
 import '../widgets/reward_dialog.dart';
+import 'game_screen.dart';
 import 'level_select_screen.dart';
 
 class LevelCompleteScreen extends StatefulWidget {
@@ -33,12 +34,26 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
     if (!_dialogShown) {
       _dialogShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final rewards = context.read<GameSession>().rewards;
+        final session = context.read<GameSession>();
+        final bestScore = session.bestScoreForLevel(widget.level.id);
+        final average = _estimateWorldAverage(widget.level);
         showDialog<void>(
           context: context,
           builder: (_) => RewardDialog(
-            rewardCount: rewards,
+            livesEarned: 1,
+            moveCount: widget.moves,
+            bestScore: bestScore,
+            worldAverage: average,
             onContinue: () => Navigator.of(context).pop(),
+            onViewPuzzle: () => Navigator.of(context).pop(),
+            onRetry: () {
+              Navigator.of(context).pop();
+              _retryLevel();
+            },
+            onShare: () {
+              Navigator.of(context).pop();
+              _shareResults();
+            },
           ),
         );
       });
@@ -47,57 +62,116 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Рівень завершено')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Hero(
-              tag: widget.level.id,
-              child: Text(
-                widget.level.name,
-                style: Theme.of(context).textTheme.displaySmall,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'LEVEL COMPLETED!',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.fast_forward_rounded),
+                    label: const Text('NEXT'),
+                    onPressed: _goToNextLevel,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 24),
-            _StatRow(label: 'Ходи', value: widget.moves.toString()),
-            _StatRow(label: 'Підказки', value: widget.hintsUsed.toString()),
-            _StatRow(
-              label: 'Час',
-              value: _formatDuration(widget.duration),
-            ),
-            const SizedBox(height: 40),
-            FilledButton.icon(
-              icon: const Icon(Icons.replay),
-              label: const Text('Грати ще раз'),
-              onPressed: () {
-                final session = context.read<GameSession>();
-                session.selectLevel(widget.level);
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const LevelSelectScreen(),
+              const SizedBox(height: 16),
+              Text(
+                widget.level.name,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: Center(
+                  child: Hero(
+                    tag: widget.level.id,
+                    child: _LevelPreview(level: widget.level),
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const LevelSelectScreen(),
-                  ),
-                  (route) => false,
-                );
-              },
-              child: const Text('До вибору рівнів'),
-            ),
-          ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextButton.icon(
+                onPressed: _returnToLevelSelect,
+                icon: const Icon(Icons.map_rounded),
+                label: const Text('Choose another level'),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _goToNextLevel() async {
+    final session = context.read<GameSession>();
+    final currentIndex = session.levels.indexOf(widget.level);
+    if (currentIndex >= 0 && currentIndex + 1 < session.levels.length) {
+      final nextLevel = session.levels[currentIndex + 1];
+      if (session.isLevelUnlocked(nextLevel)) {
+        session.selectLevel(nextLevel);
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => const GameScreen(),
+          ),
+        );
+        return;
+      }
+    }
+    _returnToLevelSelect();
+  }
+
+  Future<void> _returnToLevelSelect() async {
+    await Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(
+        builder: (_) => const LevelSelectScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
+  Future<void> _retryLevel() async {
+    final session = context.read<GameSession>();
+    session.selectLevel(widget.level);
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const GameScreen(),
+      ),
+    );
+  }
+
+  void _shareResults() {
+    if (!mounted) return;
+    final hintLabel = widget.hintsUsed == 0
+        ? 'no hints'
+        : '${widget.hintsUsed} hint${widget.hintsUsed == 1 ? '' : 's'}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Shared ${widget.level.name}: ${widget.moves} moves in ${_formatDuration(widget.duration)} with $hintLabel.',
+        ),
+      ),
+    );
+  }
+
+  int _estimateWorldAverage(GradientPuzzleLevel level) {
+    final base = level.tileCount;
+    return (base * 1.4).round();
   }
 
   String _formatDuration(Duration duration) {
@@ -107,29 +181,57 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
   }
 }
 
-class _StatRow extends StatelessWidget {
-  const _StatRow({required this.label, required this.value});
+class _LevelPreview extends StatelessWidget {
+  const _LevelPreview({required this.level});
 
-  final String label;
-  final String value;
+  final GradientPuzzleLevel level;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyLarge,
+    final theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final dimension = constraints.biggest.shortestSide;
+        return Container(
+          width: dimension,
+          height: dimension,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow,
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium,
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: level.gridSize,
+            ),
+            itemCount: level.tileCount,
+            padding: EdgeInsets.zero,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.all(4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: level.colorForIndex(index),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.35),
+                      width: 1.2,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

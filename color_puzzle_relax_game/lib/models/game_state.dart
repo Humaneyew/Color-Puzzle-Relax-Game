@@ -15,10 +15,13 @@ class GameSession extends ChangeNotifier {
 
   GradientPuzzleLevel? _currentLevel;
   GameBoardController? _controller;
+  int _currentLevelIndex = 0;
 
   int _lives = 5;
   int _hints = 3;
   int _rewards = 0;
+  int _highestUnlocked = 0;
+  final Map<String, int> _bestScores = {};
 
   GradientPuzzleLevel? get currentLevel => _currentLevel;
 
@@ -30,11 +33,43 @@ class GameSession extends ChangeNotifier {
 
   int get rewards => _rewards;
 
+  int get currentLevelIndex => _currentLevelIndex;
+
+  int get highestUnlocked => _highestUnlocked;
+
+  int? bestScoreForLevel(String levelId) => _bestScores[levelId];
+
+  bool isLevelUnlocked(GradientPuzzleLevel level) {
+    final index = levels.indexOf(level);
+    if (index < 0) {
+      return false;
+    }
+    return index <= _highestUnlocked;
+  }
+
   bool get isOutOfLives => _lives <= 0;
 
   void selectLevel(GradientPuzzleLevel level) {
+    if (!isLevelUnlocked(level)) {
+      return;
+    }
     _currentLevel = level;
+    _currentLevelIndex = levels.indexOf(level);
     _controller = GameBoardController(level);
+    notifyListeners();
+  }
+
+  void recordCompletion(GradientPuzzleLevel level, int moves) {
+    final levelIndex = levels.indexOf(level);
+    if (levelIndex >= 0) {
+      if (_highestUnlocked < levelIndex + 1 && levelIndex + 1 < levels.length) {
+        _highestUnlocked = levelIndex + 1;
+      }
+      final best = _bestScores[level.id];
+      if (best == null || moves < best) {
+        _bestScores[level.id] = moves;
+      }
+    }
     notifyListeners();
   }
 
@@ -79,7 +114,11 @@ class GameSession extends ChangeNotifier {
     _lives = 5;
     _hints = 3;
     _rewards = 0;
+    _highestUnlocked = 0;
+    _bestScores.clear();
+    if (levels.isNotEmpty) {
+      selectLevel(levels.first);
+    }
     _controller?.reset();
-    notifyListeners();
   }
 }

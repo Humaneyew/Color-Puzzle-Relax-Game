@@ -65,6 +65,7 @@ class _GameScreenState extends State<GameScreen> {
       final level = session.currentLevel;
       if (level != null) {
         session.rewardPlayer();
+        session.recordCompletion(level, controller.moveCount);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (_) => LevelCompleteScreen(
@@ -124,71 +125,45 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(level.name),
-        actions: [
-          IconButton(
-            tooltip: 'Отримати підказку',
-            onPressed: session.hints > 0 ? _onHintPressed : null,
-            icon: const Icon(Icons.lightbulb_outline),
-          ),
-          IconButton(
-            tooltip: 'Показати рекламу за підказку',
-            onPressed: _onWatchAdForHint,
-            icon: const Icon(Icons.play_circle_outline),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildStatsBar(session, controller),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _BoardView(
-                controller: controller,
-                level: level,
-                highlightedIndex: _highlightedIndex,
-                onTileDragged: (index) {
-                  setState(() => _highlightedIndex = index);
-                },
-                onDragEnd: () {
-                  if (mounted) {
-                    setState(() => _highlightedIndex = -1);
-                  }
-                },
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _GameHeader(
+                levelNumber: session.currentLevelIndex + 1,
+                moveCount: controller.moveCount,
+                hintsRemaining: session.hints,
+                onHintPressed: _handleHintPressed,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsBar(GameSession session, GameBoardController controller) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _StatChip(
-              icon: Icons.favorite,
-              label: 'Життя',
-              value: session.lives.toString(),
-            ),
-            _StatChip(
-              icon: Icons.lightbulb,
-              label: 'Підказки',
-              value: session.hints.toString(),
-            ),
-            _StatChip(
-              icon: Icons.swap_vert,
-              label: 'Ходи',
-              value: controller.moveCount.toString(),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                level.name,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(letterSpacing: 1.1),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: _BoardView(
+                  controller: controller,
+                  level: level,
+                  highlightedIndex: _highlightedIndex,
+                  onTileDragged: (index) {
+                    setState(() => _highlightedIndex = index);
+                  },
+                  onDragEnd: () {
+                    if (mounted) {
+                      setState(() => _highlightedIndex = -1);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -213,6 +188,167 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _onWatchAdForHint() async {
     final session = context.read<GameSession>();
     await session.watchAdForHint();
+  }
+
+  Future<void> _handleHintPressed() async {
+    final session = context.read<GameSession>();
+    if (session.hints > 0) {
+      await _onHintPressed();
+    } else {
+      await _onWatchAdForHint();
+    }
+  }
+}
+
+class _GameHeader extends StatelessWidget {
+  const _GameHeader({
+    required this.levelNumber,
+    required this.moveCount,
+    required this.hintsRemaining,
+    required this.onHintPressed,
+  });
+
+  final int levelNumber;
+  final int moveCount;
+  final int hintsRemaining;
+  final Future<void> Function() onHintPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InfoBadge(
+          label: 'LEVEL',
+          value: levelNumber.toString(),
+        ),
+        const Spacer(),
+        _InfoBadge(
+          label: 'MOVES',
+          value: moveCount.toString(),
+        ),
+        const SizedBox(width: 12),
+        _IconLabelButton(
+          icon: Icons.share,
+          label: 'SHARE',
+          onPressed: () async {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Sharing will be available soon.')),
+            );
+          },
+        ),
+        const SizedBox(width: 12),
+        _IconLabelButton(
+          icon: Icons.lightbulb_outline,
+          label: 'HINTS',
+          badgeText: hintsRemaining > 0 ? 'x$hintsRemaining' : 'WATCH',
+          onPressed: onHintPressed,
+          highlight: hintsRemaining == 0,
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoBadge extends StatelessWidget {
+  const _InfoBadge({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.28),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withOpacity(0.65),
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IconLabelButton extends StatelessWidget {
+  const _IconLabelButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.badgeText,
+    this.highlight = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final Future<void> Function() onPressed;
+  final String? badgeText;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final background = highlight
+        ? theme.colorScheme.secondary.withOpacity(0.2)
+        : Colors.white.withOpacity(0.3);
+    final iconColor = highlight
+        ? theme.colorScheme.secondary
+        : theme.colorScheme.onSurface.withOpacity(0.8);
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => onPressed(),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: background,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontSize: 12,
+              letterSpacing: 1.2,
+            ),
+          ),
+          if (badgeText != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              badgeText!,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontSize: 11,
+                color: highlight
+                    ? theme.colorScheme.secondary
+                    : theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
