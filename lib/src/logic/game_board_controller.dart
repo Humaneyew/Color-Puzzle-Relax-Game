@@ -2,28 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'models/level.dart';
-
-/// Represents a tile in the gradient puzzle.
-class GradientTile {
-  GradientTile({
-    required this.correctIndex,
-    required this.color,
-    this.fixed = false,
-  });
-
-  final int correctIndex;
-  final Color color;
-  final bool fixed;
-
-  GradientTile copyWith({bool? fixed}) {
-    return GradientTile(
-      correctIndex: correctIndex,
-      color: color,
-      fixed: fixed ?? this.fixed,
-    );
-  }
-}
+import '../data/level.dart';
+import '../data/tile.dart';
 
 /// Controller encapsulating puzzle state and user actions.
 class GameBoardController extends ChangeNotifier {
