@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/game_state.dart';
-import '../models/level.dart';
-import '../widgets/reward_dialog.dart';
-import 'game_screen.dart';
-import 'level_select_screen.dart';
+import 'package:color_puzzle_relax_game/src/components/reward_dialog.dart';
+import 'package:color_puzzle_relax_game/src/data/models/game_result.dart';
+import 'package:color_puzzle_relax_game/src/data/models/level.dart';
+import 'package:color_puzzle_relax_game/src/logic/game_session.dart';
+import 'package:color_puzzle_relax_game/src/screens/game_screen.dart';
+import 'package:color_puzzle_relax_game/src/screens/level_select_screen.dart';
 
 class LevelCompleteScreen extends StatefulWidget {
   const LevelCompleteScreen({
     required this.level,
-    required this.moves,
-    required this.hintsUsed,
-    required this.duration,
+    required this.result,
     super.key,
   });
 
   final GradientPuzzleLevel level;
-  final int moves;
-  final int hintsUsed;
-  final Duration duration;
+  final GameResult result;
 
   @override
   State<LevelCompleteScreen> createState() => _LevelCompleteScreenState();
@@ -41,7 +38,7 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
           context: context,
           builder: (_) => RewardDialog(
             livesEarned: 1,
-            moveCount: widget.moves,
+            moveCount: widget.result.moves,
             bestScore: bestScore,
             worldAverage: average,
             onContinue: () => Navigator.of(context).pop(),
@@ -157,14 +154,14 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
 
   void _shareResults() {
     if (!mounted) return;
-    final hintLabel = widget.hintsUsed == 0
+    final hintLabel = widget.result.hintsUsed == 0
         ? 'no hints'
-        : '${widget.hintsUsed} hint${widget.hintsUsed == 1 ? '' : 's'}';
+        : '${widget.result.hintsUsed} hint${widget.result.hintsUsed == 1 ? '' : 's'}';
+    final shareText =
+        'Shared ${widget.level.name}: ${widget.result.moves} moves in ${_formatDuration(widget.result.duration)} with $hintLabel.';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Shared ${widget.level.name}: ${widget.moves} moves in ${_formatDuration(widget.duration)} with $hintLabel.',
-        ),
+        content: Text(shareText),
       ),
     );
   }

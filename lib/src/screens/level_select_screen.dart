@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/game_state.dart';
-import '../models/level.dart';
-import 'game_screen.dart';
+import 'package:color_puzzle_relax_game/src/data/models/level.dart';
+import 'package:color_puzzle_relax_game/src/logic/game_session.dart';
+import 'package:color_puzzle_relax_game/src/screens/game_screen.dart';
 
 class LevelSelectScreen extends StatelessWidget {
   const LevelSelectScreen({super.key});

@@ -3,10 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../game_board.dart';
-import '../models/game_state.dart';
-import '../widgets/gradient_tile.dart';
-import 'level_complete_screen.dart';
+import 'package:color_puzzle_relax_game/src/components/gradient_tile.dart';
+import 'package:color_puzzle_relax_game/src/data/models/level.dart';
+import 'package:color_puzzle_relax_game/src/data/models/tile.dart';
+import 'package:color_puzzle_relax_game/src/logic/game_board.dart';
+import 'package:color_puzzle_relax_game/src/logic/game_session.dart';
+import 'package:color_puzzle_relax_game/src/screens/level_complete_screen.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -65,14 +67,18 @@ class _GameScreenState extends State<GameScreen> {
       final level = session.currentLevel;
       if (level != null) {
         session.rewardPlayer();
-        session.recordCompletion(level, controller.moveCount);
+        final completionDuration = DateTime.now().difference(_startedAt);
+        final result = session.recordCompletion(
+          level: level,
+          moves: controller.moveCount,
+          hintsUsed: _hintsUsed,
+          duration: completionDuration,
+        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (_) => LevelCompleteScreen(
               level: level,
-              moves: controller.moveCount,
-              hintsUsed: _hintsUsed,
-              duration: DateTime.now().difference(_startedAt),
+              result: result,
             ),
           ),
         );

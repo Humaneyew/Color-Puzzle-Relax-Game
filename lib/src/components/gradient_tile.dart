@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../game_board.dart';
+import 'package:color_puzzle_relax_game/src/data/models/tile.dart';
 
 class GradientTileWidget extends StatelessWidget {
   const GradientTileWidget({

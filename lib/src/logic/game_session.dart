@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-import '../game_board.dart';
-import 'level.dart';
-import '../services/ad_service.dart';
+import 'package:color_puzzle_relax_game/src/data/models/game_result.dart';
+import 'package:color_puzzle_relax_game/src/data/models/level.dart';
+import 'package:color_puzzle_relax_game/src/logic/game_board.dart';
+import 'package:color_puzzle_relax_game/src/logic/services/ad_service.dart';
 
 class GameSession extends ChangeNotifier {
   GameSession({required this.levels, required AdService adService})
@@ -22,6 +23,7 @@ class GameSession extends ChangeNotifier {
   int _rewards = 0;
   int _highestUnlocked = 0;
   final Map<String, int> _bestScores = {};
+  final List<GameResult> _results = <GameResult>[];
 
   GradientPuzzleLevel? get currentLevel => _currentLevel;
 
@@ -38,6 +40,8 @@ class GameSession extends ChangeNotifier {
   int get highestUnlocked => _highestUnlocked;
 
   int? bestScoreForLevel(String levelId) => _bestScores[levelId];
+
+  List<GameResult> get results => List.unmodifiable(_results);
 
   bool isLevelUnlocked(GradientPuzzleLevel level) {
     final index = levels.indexOf(level);
@@ -59,7 +63,12 @@ class GameSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void recordCompletion(GradientPuzzleLevel level, int moves) {
+  GameResult recordCompletion({
+    required GradientPuzzleLevel level,
+    required int moves,
+    required Duration duration,
+    required int hintsUsed,
+  }) {
     final levelIndex = levels.indexOf(level);
     if (levelIndex >= 0) {
       if (_highestUnlocked < levelIndex + 1 && levelIndex + 1 < levels.length) {
@@ -70,7 +79,16 @@ class GameSession extends ChangeNotifier {
         _bestScores[level.id] = moves;
       }
     }
+    final result = GameResult(
+      levelId: level.id,
+      moves: moves,
+      hintsUsed: hintsUsed,
+      duration: duration,
+      completedAt: DateTime.now(),
+    );
+    _results.add(result);
     notifyListeners();
+    return result;
   }
 
   void decrementLife() {
@@ -116,6 +134,7 @@ class GameSession extends ChangeNotifier {
     _rewards = 0;
     _highestUnlocked = 0;
     _bestScores.clear();
+    _results.clear();
     if (levels.isNotEmpty) {
       selectLevel(levels.first);
     }
