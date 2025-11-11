@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-import '../game_board.dart';
-import 'level.dart';
+import '../data/game_state_models.dart';
+import '../data/gradient_puzzle_level.dart';
+import 'game_board_controller.dart';
 import '../services/ad_service.dart';
 
 class GameSession extends ChangeNotifier {
@@ -22,6 +23,7 @@ class GameSession extends ChangeNotifier {
   int _rewards = 0;
   int _highestUnlocked = 0;
   final Map<String, int> _bestScores = {};
+  GameResult? _lastResult;
 
   GradientPuzzleLevel? get currentLevel => _currentLevel;
 
@@ -38,6 +40,24 @@ class GameSession extends ChangeNotifier {
   int get highestUnlocked => _highestUnlocked;
 
   int? bestScoreForLevel(String levelId) => _bestScores[levelId];
+
+  GameResult? get lastResult => _lastResult;
+
+  GameStateSnapshot? get snapshot {
+    final current = _currentLevel;
+    final controller = _controller;
+    if (current == null || controller == null) {
+      return null;
+    }
+    return GameStateSnapshot(
+      level: current,
+      moves: controller.moveCount,
+      lives: _lives,
+      hints: _hints,
+      rewards: _rewards,
+      highestUnlockedLevelIndex: _highestUnlocked,
+    );
+  }
 
   bool isLevelUnlocked(GradientPuzzleLevel level) {
     final index = levels.indexOf(level);
@@ -56,6 +76,7 @@ class GameSession extends ChangeNotifier {
     _currentLevel = level;
     _currentLevelIndex = levels.indexOf(level);
     _controller = GameBoardController(level);
+    _lastResult = null;
     notifyListeners();
   }
 
@@ -69,6 +90,10 @@ class GameSession extends ChangeNotifier {
       if (best == null || moves < best) {
         _bestScores[level.id] = moves;
       }
+    }
+    final controller = _controller;
+    if (controller != null) {
+      _lastResult = controller.buildResult();
     }
     notifyListeners();
   }
@@ -116,6 +141,7 @@ class GameSession extends ChangeNotifier {
     _rewards = 0;
     _highestUnlocked = 0;
     _bestScores.clear();
+    _lastResult = null;
     if (levels.isNotEmpty) {
       selectLevel(levels.first);
     }

@@ -2,28 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'models/level.dart';
-
-/// Represents a tile in the gradient puzzle.
-class GradientTile {
-  GradientTile({
-    required this.correctIndex,
-    required this.color,
-    this.fixed = false,
-  });
-
-  final int correctIndex;
-  final Color color;
-  final bool fixed;
-
-  GradientTile copyWith({bool? fixed}) {
-    return GradientTile(
-      correctIndex: correctIndex,
-      color: color,
-      fixed: fixed ?? this.fixed,
-    );
-  }
-}
+import '../data/game_state_models.dart';
+import '../data/gradient_puzzle_level.dart';
+import '../data/gradient_tile.dart';
 
 /// Controller encapsulating puzzle state and user actions.
 class GameBoardController extends ChangeNotifier {
@@ -38,6 +19,7 @@ class GameBoardController extends ChangeNotifier {
   late List<GradientTile> _tiles;
   int _moveCount = 0;
   int _invalidMoves = 0;
+  late DateTime _startedAt;
 
   GradientTile tileAt(int index) => _tiles[index];
 
@@ -55,6 +37,10 @@ class GameBoardController extends ChangeNotifier {
       .where((entry) => entry.key == entry.value.correctIndex)
       .length;
 
+  DateTime get startedAt => _startedAt;
+
+  Duration get elapsed => DateTime.now().difference(_startedAt);
+
   void reset() {
     _moveCount = 0;
     _invalidMoves = 0;
@@ -63,6 +49,7 @@ class GameBoardController extends ChangeNotifier {
   }
 
   void _initializeTiles() {
+    _startedAt = DateTime.now();
     final baseTiles = List.generate(level.tileCount, (index) {
       final color = level.colorForIndex(index);
       final fixed = level.fixedCells.contains(index);
@@ -155,5 +142,14 @@ class GameBoardController extends ChangeNotifier {
     _moveCount++;
     notifyListeners();
     return targetIndex;
+  }
+
+  GameResult buildResult() {
+    return GameResult(
+      level: level,
+      moveCount: _moveCount,
+      invalidMoveCount: _invalidMoves,
+      duration: elapsed,
+    );
   }
 }
