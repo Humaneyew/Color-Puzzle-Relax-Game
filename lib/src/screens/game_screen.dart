@@ -1,10 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../components/gradient_tile.dart';
-import '../data/tile.dart';
+import '../components/game_board.dart';
 import '../logic/game_board_controller.dart';
 import '../logic/game_session.dart';
 import 'level_complete_screen.dart';
@@ -152,7 +149,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 20),
               Expanded(
-                child: _BoardView(
+                child: GradientGameBoard(
                   controller: controller,
                   level: level,
                   highlightedIndex: _highlightedIndex,
@@ -352,163 +349,6 @@ class _IconLabelButton extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-class _BoardView extends StatelessWidget {
-  const _BoardView({
-    required this.controller,
-    required this.level,
-    required this.highlightedIndex,
-    required this.onTileDragged,
-    required this.onDragEnd,
-  });
-
-  final GameBoardController controller;
-  final GradientPuzzleLevel level;
-  final int highlightedIndex;
-  final ValueChanged<int> onTileDragged;
-  final VoidCallback onDragEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = min(constraints.maxWidth, constraints.maxHeight);
-        final tileSize = size / level.gridSize;
-        final tileExtent = max(24.0, tileSize - 8);
-        return Center(
-          child: SizedBox(
-            width: tileSize * level.gridSize,
-            height: tileSize * level.gridSize,
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: level.gridSize,
-              ),
-              itemCount: level.tileCount,
-              itemBuilder: (context, index) {
-                final tile = controller.tileAt(index);
-                final tileWidget = AnimatedScale(
-                  duration: const Duration(milliseconds: 200),
-                  scale: highlightedIndex == index ? 1.05 : 1.0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: _TileDraggable(
-                      index: index,
-                      tile: tile,
-                      tileSize: tileExtent,
-                      isHighlighted: highlightedIndex == index,
-                      controller: controller,
-                      onTileDragged: onTileDragged,
-                      onDragEnd: onDragEnd,
-                    ),
-                  ),
-                );
-                return tileWidget;
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _TileDraggable extends StatelessWidget {
-  const _TileDraggable({
-    required this.index,
-    required this.tile,
-    required this.tileSize,
-    required this.isHighlighted,
-    required this.controller,
-    required this.onTileDragged,
-    required this.onDragEnd,
-  });
-
-  final int index;
-  final GradientTile tile;
-  final double tileSize;
-  final bool isHighlighted;
-  final GameBoardController controller;
-  final ValueChanged<int> onTileDragged;
-  final VoidCallback onDragEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    final child = _TileDropTarget(
-      index: index,
-      controller: controller,
-      tileSize: tileSize,
-      tile: tile,
-      isHighlighted: isHighlighted,
-      onDragEnd: onDragEnd,
-    );
-
-    if (tile.fixed) {
-      return child;
-    }
-
-    return LongPressDraggable<int>(
-      data: index,
-      feedback: Material(
-        color: Colors.transparent,
-        child: SizedBox(
-          width: tileSize,
-          height: tileSize,
-          child: GradientTileWidget(
-            tile: tile,
-            size: tileSize,
-            isHighlighted: true,
-          ),
-        ),
-      ),
-      onDragStarted: () => onTileDragged(index),
-      onDragEnd: (_) => onDragEnd(),
-      childWhenDragging: GradientTileWidget(
-        tile: tile,
-        size: tileSize,
-        isHighlighted: false,
-        dimmed: true,
-      ),
-      child: child,
-    );
-  }
-}
-
-class _TileDropTarget extends StatelessWidget {
-  const _TileDropTarget({
-    required this.index,
-    required this.controller,
-    required this.tileSize,
-    required this.tile,
-    required this.isHighlighted,
-    required this.onDragEnd,
-  });
-
-  final int index;
-  final GameBoardController controller;
-  final double tileSize;
-  final GradientTile tile;
-  final bool isHighlighted;
-  final VoidCallback onDragEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return DragTarget<int>(
-      onWillAccept: (data) => data != null,
-      onAccept: (fromIndex) {
-        controller.swapTiles(fromIndex, index);
-        onDragEnd();
-      },
-      builder: (context, candidateData, rejectedData) {
-        return GradientTileWidget(
-          tile: tile,
-          size: tileSize,
-          isHighlighted: isHighlighted || candidateData.isNotEmpty,
-        );
-      },
     );
   }
 }
