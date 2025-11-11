@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/game_state.dart';
-import '../models/level.dart';
+import '../data/game_state.dart';
+import '../data/level.dart';
+import '../logic/game_session.dart';
 import 'game_screen.dart';
 
 class LevelSelectScreen extends StatelessWidget {
@@ -13,6 +14,7 @@ class LevelSelectScreen extends StatelessWidget {
     final session = context.watch<GameSession>();
     final theme = Theme.of(context);
     final levels = session.levels;
+    final state = session.snapshot;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -20,7 +22,7 @@ class LevelSelectScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TopBar(lives: session.lives),
+              _TopBar(state: state),
               const SizedBox(height: 24),
               _TitleHeader(theme: theme),
               const SizedBox(height: 24),
@@ -30,7 +32,7 @@ class LevelSelectScreen extends StatelessWidget {
                 child: _LevelGrid(
                   levels: levels,
                   currentIndex: session.currentLevelIndex,
-                  highestUnlocked: session.highestUnlocked,
+                  highestUnlocked: state.highestUnlocked,
                 ),
               ),
             ],
@@ -42,9 +44,9 @@ class LevelSelectScreen extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.lives});
+  const _TopBar({required this.state});
 
-  final int lives;
+  final GameStateSnapshot state;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +63,7 @@ class _TopBar extends StatelessWidget {
               const Icon(Icons.favorite, color: Color(0xFFDF7F5B)),
               const SizedBox(width: 8),
               Text(
-                lives.toString(),
+                state.lives.toString(),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -70,12 +72,48 @@ class _TopBar extends StatelessWidget {
             ],
           ),
         ),
-        const Spacer(),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.play_arrow_rounded, size: 28),
+        const SizedBox(width: 12),
+        _TopBarPill(
+          icon: Icons.lightbulb_outline,
+          label: state.hints.toString(),
+        ),
+        const SizedBox(width: 12),
+        _TopBarPill(
+          icon: Icons.stars_rounded,
+          label: state.rewards.toString(),
         ),
       ],
+    );
+  }
+}
+
+class _TopBarPill extends StatelessWidget {
+  const _TopBarPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 }
