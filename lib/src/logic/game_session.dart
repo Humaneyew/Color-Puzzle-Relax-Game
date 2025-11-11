@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/game_state.dart';
@@ -5,15 +7,23 @@ import '../data/level.dart';
 import 'game_board_controller.dart';
 import '../data/game_result.dart';
 import 'services/ad_service.dart';
+import '../data/player_progress.dart';
+import 'services/progress_repository.dart';
 
 class GameSession extends ChangeNotifier {
-  GameSession({required this.levels, required AdService adService})
-      : _adService = adService {
-    selectLevel(levels.first);
+  GameSession({
+    required this.levels,
+    required AdService adService,
+    required ProgressRepository progressRepository,
+  })  : _adService = adService,
+        _progressRepository = progressRepository,
+        _progress = PlayerProgress.initial(levels) {
+    _applyProgress(_progress);
   }
 
   final List<GradientPuzzleLevel> levels;
   final AdService _adService;
+  final ProgressRepository _progressRepository;
 
   GradientPuzzleLevel? _currentLevel;
   GameBoardController? _controller;
@@ -23,7 +33,7 @@ class GameSession extends ChangeNotifier {
   int _hints = 3;
   int _rewards = 0;
   int _highestUnlocked = 0;
-  final Map<String, int> _bestScores = {};
+  PlayerProgress _progress;
 
   GradientPuzzleLevel? get currentLevel => _currentLevel;
 
@@ -39,7 +49,20 @@ class GameSession extends ChangeNotifier {
 
   int get highestUnlocked => _highestUnlocked;
 
-  int? bestScoreForLevel(String levelId) => _bestScores[levelId];
+  int? bestScoreForLevel(String levelId) {
+    return _progress.progressFor(levelId).bestMoves;
+  }
+
+  bool isLevelCompleted(GradientPuzzleLevel level) {
+    return _progress.isLevelCompleted(level.id);
+  }
+
+  Future<void> restore() async {
+    final stored = await _progressRepository.loadProgress(levels);
+    _progress = stored;
+    _applyProgress(_progress);
+    notifyListeners();
+  }
 
   GameStateSnapshot get snapshot => GameStateSnapshot(
         levelId: _currentLevel?.id,
@@ -55,7 +78,7 @@ class GameSession extends ChangeNotifier {
     if (index < 0) {
       return false;
     }
-    return index <= _highestUnlocked;
+    return _progress.isLevelUnlocked(level.id);
   }
 
   bool get isOutOfLives => _lives <= 0;
@@ -67,6 +90,8 @@ class GameSession extends ChangeNotifier {
     _currentLevel = level;
     _currentLevelIndex = levels.indexOf(level);
     _controller = GameBoardController(level);
+    _progress = _progress.withCurrentLevel(level.id);
+    unawaited(_progressRepository.saveProgress(_progress));
     notifyListeners();
   }
 
@@ -74,13 +99,22 @@ class GameSession extends ChangeNotifier {
       {required Duration duration, required int hintsUsed}) {
     final levelIndex = levels.indexOf(level);
     if (levelIndex >= 0) {
-      if (_highestUnlocked < levelIndex + 1 && levelIndex + 1 < levels.length) {
-        _highestUnlocked = levelIndex + 1;
+      final previous = _progress.progressFor(level.id);
+      final bestMoves = previous.bestMoves;
+      final shouldUpdateBest = bestMoves == null || moves < bestMoves;
+      final updatedLevel = previous.copyWith(
+        status: LevelStatus.completed,
+        bestMoves: shouldUpdateBest ? moves : bestMoves,
+      );
+      _progress = _progress.updateLevel(updatedLevel);
+      final nextIndex = levelIndex + 1;
+      if (nextIndex < levels.length) {
+        final nextLevel = levels[nextIndex];
+        _progress = _progress.unlockLevel(nextLevel.id);
       }
-      final best = _bestScores[level.id];
-      if (best == null || moves < best) {
-        _bestScores[level.id] = moves;
-      }
+      _progress = _progress.withCurrentLevel(level.id);
+      _highestUnlocked = _progress.highestUnlockedIndex(levels);
+      unawaited(_progressRepository.saveProgress(_progress));
     }
     notifyListeners();
     return GameResult(
@@ -132,11 +166,26 @@ class GameSession extends ChangeNotifier {
     _lives = 5;
     _hints = 3;
     _rewards = 0;
-    _highestUnlocked = 0;
-    _bestScores.clear();
-    if (levels.isNotEmpty) {
-      selectLevel(levels.first);
-    }
+    _progress = PlayerProgress.initial(levels);
+    _applyProgress(_progress);
+    unawaited(_progressRepository.saveProgress(_progress));
     _controller?.reset();
+    notifyListeners();
+  }
+
+  void _applyProgress(PlayerProgress progress) {
+    _highestUnlocked = progress.highestUnlockedIndex(levels);
+    final currentIndex = progress.currentLevelIndex(levels) ?? 0;
+    if (levels.isEmpty) {
+      _currentLevel = null;
+      _controller = null;
+      _currentLevelIndex = 0;
+      return;
+    }
+    final index = currentIndex.clamp(0, levels.length - 1);
+    final level = levels[index];
+    _currentLevel = level;
+    _currentLevelIndex = index;
+    _controller = GameBoardController(level);
   }
 }
