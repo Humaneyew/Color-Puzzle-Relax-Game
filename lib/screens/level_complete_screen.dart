@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../logic/game_session.dart';
-import '../data/gradient_puzzle_level.dart';
-import '../components/reward_dialog.dart';
+import '../models/game_state.dart';
+import '../models/level.dart';
+import '../widgets/reward_dialog.dart';
 import 'game_screen.dart';
 import 'level_select_screen.dart';
 
