@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../components/game_header.dart';
 import '../data/game_state.dart';
 import '../data/level.dart';
 import '../logic/game_session.dart';
@@ -22,9 +23,13 @@ class LevelSelectScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TopBar(state: state),
-              const SizedBox(height: 24),
-              _TitleHeader(theme: theme),
+              GameHeader(
+                title: 'Color Puzzle',
+                subtitle: 'Choose a level to start',
+                state: state,
+                onSettingsTap: () => _showComingSoon(context),
+                onShopTap: () => _showComingSoon(context),
+              ),
               const SizedBox(height: 24),
               const _ModeCard(),
               const SizedBox(height: 24),
@@ -33,6 +38,7 @@ class LevelSelectScreen extends StatelessWidget {
                   levels: levels,
                   currentIndex: session.currentLevelIndex,
                   highestUnlocked: state.highestUnlocked,
+                  isLevelCompleted: session.isLevelCompleted,
                 ),
               ),
             ],
@@ -41,127 +47,12 @@ class LevelSelectScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.state});
-
-  final GameStateSnapshot state;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.favorite, color: Color(0xFFDF7F5B)),
-              const SizedBox(width: 8),
-              Text(
-                state.lives.toString(),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        _TopBarPill(
-          icon: Icons.lightbulb_outline,
-          label: state.hints.toString(),
-        ),
-        const SizedBox(width: 12),
-        _TopBarPill(
-          icon: Icons.stars_rounded,
-          label: state.rewards.toString(),
-        ),
-      ],
-    );
-  }
-}
-
-class _TopBarPill extends StatelessWidget {
-  const _TopBarPill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Feature coming soon!'),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TitleHeader extends StatelessWidget {
-  const _TitleHeader({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          'COLOR\nPUZZLE',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            letterSpacing: 3,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose a Level to Start',
-          style: theme.textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (var i = 0; i < 4; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Container(
-                  width: i == 1 ? 18 : 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: i == 1
-                        ? theme.colorScheme.primary
-                        : Colors.white.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
     );
   }
 }
@@ -224,11 +115,13 @@ class _LevelGrid extends StatelessWidget {
     required this.levels,
     required this.currentIndex,
     required this.highestUnlocked,
+    required this.isLevelCompleted,
   });
 
   final List<GradientPuzzleLevel> levels;
   final int currentIndex;
   final int highestUnlocked;
+  final bool Function(GradientPuzzleLevel level) isLevelCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -248,12 +141,14 @@ class _LevelGrid extends StatelessWidget {
         final level = levels[index];
         final unlocked = index <= highestUnlocked;
         final isCurrent = index == currentIndex;
+        final completed = isLevelCompleted(level);
         return Hero(
           tag: level.id,
           child: _LevelBadge(
             index: index,
             unlocked: unlocked,
             isCurrent: isCurrent,
+            completed: completed,
             onTap: unlocked
                 ? () {
                     context.read<GameSession>().selectLevel(level);
@@ -282,12 +177,14 @@ class _LevelBadge extends StatelessWidget {
     required this.index,
     required this.unlocked,
     required this.isCurrent,
+    required this.completed,
     required this.onTap,
   });
 
   final int index;
   final bool unlocked;
   final bool isCurrent;
+  final bool completed;
   final VoidCallback onTap;
 
   @override
@@ -318,14 +215,30 @@ class _LevelBadge extends StatelessWidget {
               ),
           ],
         ),
-        child: Center(
-          child: Text(
-            '${index + 1}',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w700,
+        child: Stack(
+          children: [
+            Center(
+              child: Text(
+                '${index + 1}',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ),
+            if (completed)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Icon(
+                  Icons.check_circle,
+                  color: isCurrent
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+          ],
         ),
       ),
     );
