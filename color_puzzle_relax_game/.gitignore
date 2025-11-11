@@ -1,0 +1,15 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Generated files
+coverage/
+android/local.properties
