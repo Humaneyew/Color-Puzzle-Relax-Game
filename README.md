@@ -1,21 +1,22 @@
-Color Puzzle: Relax Game — це мінімалістична гра-релакс, у якій гравець відновлює гармонію кольорів, впорядковуючи відтінки у правильному порядку.
-Проста механіка, плавна анімація та спокійна атмосфера роблять цю гру ідеальною для коротких сесій відпочинку.
+Color Puzzle: Relax Game is a minimalist relaxation game where the player restores color harmony by arranging shades in the correct order.
+Simple mechanics, smooth animation, and a calm atmosphere make it an ideal game for short relaxation sessions.
 
-## Технологічний стек
+Tech Stack
 
-Проєкт зібрано на Flutter 3 та орієнтований на Material 3. Для керування станом використовується пакет `provider`, а для звукового супроводу — `audioplayers`. Аналіз коду виконується завдяки `flutter_lints`, модульні тести запускаються стандартною командою `flutter test`.
+The project is built with Flutter 3 and based on Material 3.
+State management is handled via the provider package, and sound effects use the audioplayers library.
+Code analysis is ensured through flutter_lints.
 
-## Структура каталогу `lib/src`
+Directory Structure lib/src
 
-- `components/` — реюзабельні віджети інтерфейсу (плитки, діалоги тощо).
-- `screens/` — екрани застосунку.
-- `logic/` — контролери і сесійна логіка гри.
-- `data/` — типи даних та моделі домену.
-- `services/` — обгортки над платформеними сервісами (звук, реклама).
-- `theme/` — налаштування теми Material 3.
+components/ — reusable UI widgets (tiles, dialogs, etc.)
 
-## Запуск тестів
+screens/ — application screens
 
-```bash
-flutter test
-```
+logic/ — game session controllers and core logic
+
+data/ — domain models and data types
+
+services/ — platform service wrappers (sound, ads)
+
+theme/ — Material 3 theme configuration
