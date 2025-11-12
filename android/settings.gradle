@@ -1,10 +1,31 @@
+import java.util.Properties
+
+def flutterSdkPath = {
+    Properties properties = new Properties()
+    File localPropertiesFile = file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
+    }
+
+    def sdkPath = properties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_HOME')
+    if (sdkPath == null) {
+        throw new GradleException('Flutter SDK not found. Define flutter.sdk in local.properties or set FLUTTER_HOME.')
+    }
+    return sdkPath
+}()
+
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven {
+            url = uri("$flutterSdkPath/packages/flutter_tools/gradle/repository")
+        }
     }
 }
+
+includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
