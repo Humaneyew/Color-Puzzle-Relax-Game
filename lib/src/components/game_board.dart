@@ -30,45 +30,44 @@ class GradientGameBoard extends StatelessWidget {
       builder: (context, constraints) {
         final boardExtent = min(constraints.maxWidth, constraints.maxHeight);
         final tileSlotSize = boardExtent / level.gridSize;
-        final tileExtent = max(24.0, tileSlotSize - 8);
+        final inset = min(8.0, tileSlotSize * 0.18);
+        final tileExtent = max(24.0, tileSlotSize - inset * 2);
         final boardSize = tileSlotSize * level.gridSize;
+
         return Center(
           child: SizedBox(
             width: boardSize,
             height: boardSize,
             child: Stack(
-              fit: StackFit.expand,
               children: [
-                CustomPaint(
-                  painter: _BoardGridPainter(
-                    gridSize: level.gridSize,
-                    fixedCells: level.fixedCells,
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _BoardGridPainter(
+                      gridSize: level.gridSize,
+                      fixedCells: level.fixedCells,
+                    ),
                   ),
                 ),
-                GridView.builder(
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: level.gridSize,
-                  ),
-                  itemCount: level.tileCount,
-                  itemBuilder: (context, index) {
-                    final tile = controller.tileAt(index);
-                    return AnimatedScale(
-                      duration: const Duration(milliseconds: 200),
-                      scale: highlightedIndex == index ? 1.05 : 1.0,
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: _TileDraggable(
-                          index: index,
-                          tile: tile,
-                          tileSize: tileExtent,
-                          isHighlighted: highlightedIndex == index,
-                          controller: controller,
-                          onTileDragged: onTileDragged,
-                          onDragEnd: onDragEnd,
-                        ),
-                      ),
+                AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) {
+                    final tiles = controller.tiles;
+                    return Stack(
+                      children: [
+                        for (final entry in tiles.asMap().entries)
+                          _AnimatedTile(
+                            key: ValueKey(entry.value),
+                            index: entry.key,
+                            tile: entry.value,
+                            tileSlotSize: tileSlotSize,
+                            tileSize: tileExtent,
+                            inset: inset,
+                            isHighlighted: highlightedIndex == entry.key,
+                            controller: controller,
+                            onTileDragged: onTileDragged,
+                            onDragEnd: onDragEnd,
+                          ),
+                      ],
                     );
                   },
                 ),
@@ -77,6 +76,64 @@ class GradientGameBoard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _AnimatedTile extends StatelessWidget {
+  const _AnimatedTile({
+    required this.index,
+    required this.tile,
+    required this.tileSlotSize,
+    required this.tileSize,
+    required this.inset,
+    required this.isHighlighted,
+    required this.controller,
+    required this.onTileDragged,
+    required this.onDragEnd,
+    super.key,
+  });
+
+  final int index;
+  final GradientTile tile;
+  final double tileSlotSize;
+  final double tileSize;
+  final double inset;
+  final bool isHighlighted;
+  final GameBoardController controller;
+  final ValueChanged<int> onTileDragged;
+  final VoidCallback onDragEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = index ~/ controller.level.gridSize;
+    final col = index % controller.level.gridSize;
+    final top = row * tileSlotSize;
+    final left = col * tileSlotSize;
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOutCubic,
+      top: top,
+      left: left,
+      width: tileSlotSize,
+      height: tileSlotSize,
+      child: Padding(
+        padding: EdgeInsets.all(inset),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 180),
+          scale: isHighlighted ? 1.06 : 1,
+          child: _TileDraggable(
+            index: index,
+            tile: tile,
+            tileSize: tileSize,
+            isHighlighted: isHighlighted,
+            controller: controller,
+            onTileDragged: onTileDragged,
+            onDragEnd: onDragEnd,
+          ),
+        ),
+      ),
     );
   }
 }
