@@ -1,16 +1,16 @@
 import 'dart:convert';
+import 'dart:ui' show Color;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../data/level.dart';
 
 /// Loads gradient puzzle levels from a JSON asset file.
 class LevelLoader {
-  const LevelLoader({
-    this.bundle = rootBundle,
+  LevelLoader({
+    AssetBundle? bundle,
     this.assetPath = 'assets/levels/levels.json',
-  });
+  }) : bundle = bundle ?? rootBundle;
 
   /// Asset bundle used to read the JSON file. Defaults to [rootBundle].
   final AssetBundle bundle;

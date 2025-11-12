@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../components/game_board.dart';
+import '../data/level.dart';
 import '../logic/game_board_controller.dart';
 import '../logic/game_session.dart';
 import 'level_complete_screen.dart';
@@ -376,7 +377,7 @@ class _GameHeader extends StatelessWidget {
           _IconLabelButton(
             icon: Icons.favorite,
             label: 'LIVES',
-            badgeText: '${livesRemaining}/${GameSession.maxLives}',
+            badgeText: '$livesRemaining/${GameSession.maxLives}',
             onPressed: onRecoverLife,
             highlight: livesRemaining <= 1,
           ),
@@ -446,9 +447,9 @@ class _FeedbackBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.4), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
       ),
       child: Row(
         children: [
@@ -482,10 +483,10 @@ class _InfoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.65),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.15),
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
           width: 1.1,
         ),
       ),
@@ -496,7 +497,7 @@ class _InfoBadge extends StatelessWidget {
             label,
             style: theme.textTheme.labelLarge?.copyWith(
               fontSize: 12,
-              color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
+              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
             ),
           ),
           Text(
@@ -532,11 +533,11 @@ class _IconLabelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final background = highlight
-        ? theme.colorScheme.secondary.withOpacity(0.18)
-        : theme.colorScheme.surface.withOpacity(0.7);
+        ? theme.colorScheme.secondary.withValues(alpha: 0.18)
+        : theme.colorScheme.surface.withValues(alpha: 0.7);
     final iconColor = highlight
         ? theme.colorScheme.secondary
-        : theme.colorScheme.onSurface.withOpacity(0.8);
+        : theme.colorScheme.onSurface.withValues(alpha: 0.8);
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () => onPressed(),
@@ -549,8 +550,8 @@ class _IconLabelButton extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(
                 color: highlight
-                    ? theme.colorScheme.secondary.withOpacity(0.4)
-                    : theme.colorScheme.outline.withOpacity(0.18),
+                    ? theme.colorScheme.secondary.withValues(alpha: 0.4)
+                    : theme.colorScheme.outline.withValues(alpha: 0.18),
               ),
               boxShadow: [
                 BoxShadow(
@@ -579,42 +580,12 @@ class _IconLabelButton extends StatelessWidget {
                 fontSize: 11,
                 color: highlight
                     ? theme.colorScheme.secondary
-                    : theme.colorScheme.onSurface.withOpacity(0.6),
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-      ],
     );
   }
 }

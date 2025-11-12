@@ -43,7 +43,7 @@ class RewardDialog extends StatelessWidget {
       rewardBadges.add(_Badge(
         icon: Icons.stars_rounded,
         label: '+${result.rewardsEarned} points',
-        background: theme.colorScheme.primary.withOpacity(0.15),
+        background: theme.colorScheme.primary.withValues(alpha: 0.15),
         iconColor: theme.colorScheme.primary,
       ));
     }
@@ -165,7 +165,7 @@ class _RewardStat extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           Text(
@@ -231,7 +231,7 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.45),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
