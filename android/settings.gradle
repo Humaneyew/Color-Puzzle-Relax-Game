@@ -1,20 +1,5 @@
-import java.util.Properties
-
-def flutterSdkPath = {
-    Properties properties = new Properties()
-    File localPropertiesFile = file('local.properties')
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
-    }
-
-    def sdkPath = properties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_HOME')
-    if (sdkPath == null) {
-        throw new GradleException('Flutter SDK not found. Define flutter.sdk in local.properties or set FLUTTER_HOME.')
-    }
-    return sdkPath
-}()
-
 pluginManagement {
+    def flutterSdkPath = locateFlutterSdkPath()
     repositories {
         google()
         mavenCentral()
@@ -24,6 +9,8 @@ pluginManagement {
         }
     }
 }
+
+def flutterSdkPath = locateFlutterSdkPath()
 
 includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
@@ -37,3 +24,17 @@ dependencyResolutionManagement {
 
 rootProject.name = "color_puzzle_relax_game"
 include(":app")
+
+def locateFlutterSdkPath() {
+    def properties = new java.util.Properties()
+    File localPropertiesFile = file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
+    }
+
+    def sdkPath = properties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_HOME')
+    if (sdkPath == null) {
+        throw new GradleException('Flutter SDK not found. Define flutter.sdk in local.properties or set FLUTTER_HOME.')
+    }
+    return sdkPath
+}
