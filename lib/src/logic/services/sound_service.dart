@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 
 /// Handles playback of the relaxing background soundtrack.
 class SoundService {
@@ -14,12 +15,18 @@ class SoundService {
     }
     _initialized = true;
     await _player.setReleaseMode(ReleaseMode.loop);
-    await _player.setSourceUrl(
-      // Royalty-free ambient loop hosted externally to avoid bundling binaries.
-      'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/'
-      'Komiku/Its_time_for_adventure/Komiku_-_12_-_First_Steps.mp3',
-    );
-    await _player.resume();
+    try {
+      await _player.setSourceUrl(
+        // Royalty-free ambient loop hosted externally to avoid bundling binaries.
+        'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/'
+        'Komiku/Its_time_for_adventure/Komiku_-_12_-_First_Steps.mp3',
+      );
+      await _player.resume();
+    } catch (error, stackTrace) {
+      _initialized = false;
+      debugPrint('Failed to start background audio: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   Future<void> dispose() async {
