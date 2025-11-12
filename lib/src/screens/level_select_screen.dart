@@ -33,6 +33,8 @@ class LevelSelectScreen extends StatelessWidget {
               const SizedBox(height: 24),
               const _ModeCard(),
               const SizedBox(height: 24),
+              const _LifeHintInfoCard(),
+              const SizedBox(height: 24),
               Expanded(
                 child: _LevelGrid(
                   levels: levels,
@@ -106,6 +108,77 @@ class _ModeCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LifeHintInfoCard extends StatelessWidget {
+  const _LifeHintInfoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.secondaryContainer.withOpacity(0.4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Як працюють життя та підказки',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 10),
+            _RuleBullet(
+              text:
+                  'За кожну помилку віднімається 1 життя. Дивіться рекламу або проходьте рівні без помилок, щоб відновити життя.',
+            ),
+            SizedBox(height: 8),
+            _RuleBullet(
+              text:
+                  'Ви починаєте з ${GameSession.initialLives} життями. Максимальний запас — ${GameSession.maxLives}.',
+            ),
+            SizedBox(height: 8),
+            _RuleBullet(
+              text:
+                  'Початковий запас підказок — ${GameSession.initialHints}. Всього можна накопичити до ${GameSession.maxHints} підказок. Додаткові підказки доступні після перегляду реклами.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RuleBullet extends StatelessWidget {
+  const _RuleBullet({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '•',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
