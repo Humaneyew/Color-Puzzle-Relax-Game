@@ -13,10 +13,7 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    flutterRoot = System.getenv('FLUTTER_HOME')
-}
+def flutterRoot = localProperties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_HOME')
 if (flutterRoot == null) {
     throw new GradleException('Flutter SDK not found. Define flutter.sdk in local.properties or set FLUTTER_HOME.')
 }
@@ -26,16 +23,36 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')?.toInteger() ?: 1
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '0.1.0'
 
+def minSdk = localProperties.getProperty('flutter.minSdkVersion')?.toInteger() ?: 21
+def targetSdk = localProperties.getProperty('flutter.targetSdkVersion')?.toInteger() ?: 34
+
+def compileSdk = localProperties.getProperty('flutter.compileSdkVersion')?.toInteger() ?: 34
+
+def jvmTargetVersion = localProperties.getProperty('flutter.jvmTarget') ?: '17'
+
 android {
     namespace 'com.example.colorpuzzlerelax'
-    compileSdkVersion 34
+    compileSdkVersion compileSdk
 
     defaultConfig {
         applicationId 'com.example.colorpuzzlerelax'
-        minSdkVersion 21
-        targetSdkVersion 34
+        minSdkVersion minSdk
+        targetSdkVersion targetSdk
         versionCode flutterVersionCode
         versionName flutterVersionName
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = jvmTargetVersion
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
 
     buildTypes {
