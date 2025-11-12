@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -74,7 +76,9 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
                   FilledButton.icon(
                     icon: const Icon(Icons.fast_forward_rounded),
                     label: const Text('NEXT'),
-                    onPressed: _goToNextLevel,
+                    onPressed: () {
+                      unawaited(_goToNextLevel());
+                    },
                   ),
                 ],
               ),
@@ -97,7 +101,9 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
               ),
               const SizedBox(height: 24),
               TextButton.icon(
-                onPressed: _returnToLevelSelect,
+                onPressed: () {
+                  unawaited(_returnToLevelSelect());
+                },
                 icon: const Icon(Icons.map_rounded),
                 label: const Text('Choose another level'),
               ),
@@ -114,8 +120,12 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
     if (currentIndex >= 0 && currentIndex + 1 < session.levels.length) {
       final nextLevel = session.levels[currentIndex + 1];
       if (session.isLevelUnlocked(nextLevel)) {
-        session.selectLevel(nextLevel);
-        await Navigator.of(context).pushReplacement(
+        final navigator = Navigator.of(context);
+        await session.selectLevel(nextLevel);
+        if (!mounted || !navigator.mounted) {
+          return;
+        }
+        await navigator.pushReplacement(
           MaterialPageRoute<void>(
             builder: (_) => const GameScreen(),
           ),
@@ -123,11 +133,14 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
         return;
       }
     }
-    _returnToLevelSelect();
+    if (!mounted) return;
+    await _returnToLevelSelect();
   }
 
   Future<void> _returnToLevelSelect() async {
-    await Navigator.of(context).pushAndRemoveUntil(
+    final navigator = Navigator.of(context);
+    if (!navigator.mounted) return;
+    await navigator.pushAndRemoveUntil(
       MaterialPageRoute<void>(
         builder: (_) => const LevelSelectScreen(),
       ),
@@ -137,8 +150,10 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
 
   Future<void> _retryLevel() async {
     final session = context.read<GameSession>();
-    session.selectLevel(widget.level);
-    await Navigator.of(context).pushReplacement(
+    final navigator = Navigator.of(context);
+    await session.selectLevel(widget.level);
+    if (!mounted || !navigator.mounted) return;
+    await navigator.pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => const GameScreen(),
       ),
