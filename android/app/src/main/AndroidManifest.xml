@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.colorpuzzlerelax">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="Color Puzzle Relax"
         android:icon="@drawable/ic_launcher">
