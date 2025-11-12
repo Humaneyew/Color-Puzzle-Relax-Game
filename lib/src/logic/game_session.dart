@@ -99,7 +99,7 @@ class GameSession extends ChangeNotifier {
 
   bool get isOutOfLives => _lives <= 0;
 
-  void selectLevel(GradientPuzzleLevel level) {
+  Future<void> selectLevel(GradientPuzzleLevel level) async {
     if (!isLevelUnlocked(level)) {
       return;
     }
@@ -107,12 +107,16 @@ class GameSession extends ChangeNotifier {
     _currentLevelIndex = levels.indexOf(level);
     _controller = GameBoardController(level);
     _progress = _progress.withCurrentLevel(level.id);
-    unawaited(_progressRepository.saveProgress(_progress));
+    await _progressRepository.saveProgress(_progress);
     notifyListeners();
   }
 
-  GameResult recordCompletion(GradientPuzzleLevel level, int moves,
-      {required Duration duration, required int hintsUsed}) {
+  Future<GameResult> recordCompletion(
+    GradientPuzzleLevel level,
+    int moves, {
+    required Duration duration,
+    required int hintsUsed,
+  }) async {
     final levelIndex = levels.indexOf(level);
     final previousProgress = _progress.progressFor(level.id);
     final previousBest = previousProgress.bestMoves;
@@ -144,7 +148,7 @@ class GameSession extends ChangeNotifier {
       }
       _progress = _progress.withCurrentLevel(level.id);
       _highestUnlocked = _progress.highestUnlockedIndex(levels);
-      unawaited(_progressRepository.saveProgress(_progress));
+      await _progressRepository.saveProgress(_progress);
     }
     if (rewardsEarned > 0) {
       _rewards += rewardsEarned;

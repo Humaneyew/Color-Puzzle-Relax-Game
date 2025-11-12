@@ -223,9 +223,12 @@ class _LevelGrid extends StatelessWidget {
             isCurrent: isCurrent,
             completed: completed,
             onTap: unlocked
-                ? () {
-                    context.read<GameSession>().selectLevel(level);
-                    Navigator.of(context).push(
+                ? () async {
+                    final session = context.read<GameSession>();
+                    final navigator = Navigator.of(context);
+                    await session.selectLevel(level);
+                    if (!navigator.mounted) return;
+                    await navigator.push(
                       MaterialPageRoute<void>(
                         builder: (_) => const GameScreen(),
                       ),

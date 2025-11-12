@@ -77,22 +77,39 @@ class _GameScreenState extends State<GameScreen> {
     if (controller.isSolved) {
       final level = session.currentLevel;
       if (level != null) {
-        final result = session.recordCompletion(
-          level,
-          controller.moveCount,
-          duration: DateTime.now().difference(_startedAt),
-          hintsUsed: _hintsUsed,
-        );
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(
-            builder: (_) => LevelCompleteScreen(
-              level: level,
-              result: result,
-            ),
+        unawaited(
+          _completeLevel(
+            session: session,
+            level: level,
+            controller: controller,
           ),
         );
       }
     }
+  }
+
+  Future<void> _completeLevel({
+    required GameSession session,
+    required GradientPuzzleLevel level,
+    required GameBoardController controller,
+  }) async {
+    final result = await session.recordCompletion(
+      level,
+      controller.moveCount,
+      duration: DateTime.now().difference(_startedAt),
+      hintsUsed: _hintsUsed,
+    );
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => LevelCompleteScreen(
+          level: level,
+          result: result,
+        ),
+      ),
+    );
   }
 
   void _showFeedback({

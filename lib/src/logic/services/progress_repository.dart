@@ -5,6 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/player_progress.dart';
 import '../../data/level.dart';
 
+/// Persists [PlayerProgress] data as a JSON document inside
+/// `SharedPreferences`. The JSON schema matches the structure produced by
+/// [PlayerProgress.toJson] and restored with [PlayerProgress.fromJson].
 class ProgressRepository {
   ProgressRepository(this._preferences);
 
