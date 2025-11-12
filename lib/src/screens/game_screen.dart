@@ -349,46 +349,82 @@ class _GameHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _InfoBadge(
-          label: 'LEVEL',
-          value: levelNumber.toString(),
-        ),
-        const Spacer(),
-        _InfoBadge(
-          label: 'MOVES',
-          value: moveCount.toString(),
-        ),
-        const SizedBox(width: 12),
-        _IconLabelButton(
-          icon: Icons.favorite,
-          label: 'LIVES',
-          badgeText: '${livesRemaining}/${GameSession.maxLives}',
-          onPressed: onRecoverLife,
-          highlight: livesRemaining <= 1,
-        ),
-        const SizedBox(width: 12),
-        _IconLabelButton(
-          icon: Icons.share,
-          label: 'SHARE',
-          onPressed: () async {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Sharing will be available soon.')),
-            );
-          },
-        ),
-        const SizedBox(width: 12),
-        _IconLabelButton(
-          icon: Icons.lightbulb_outline,
-          label: 'HINTS',
-          badgeText: hintsRemaining > 0 ? 'x$hintsRemaining' : 'WATCH',
-          onPressed: onHintPressed,
-          highlight: hintsRemaining == 0,
-        ),
-      ],
+    final shareButton = _IconLabelButton(
+      icon: Icons.share,
+      label: 'SHARE',
+      onPressed: () async {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sharing will be available soon.')),
+        );
+      },
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 420;
+        final infoBadges = [
+          _InfoBadge(
+            label: 'LEVEL',
+            value: levelNumber.toString(),
+          ),
+          _InfoBadge(
+            label: 'MOVES',
+            value: moveCount.toString(),
+          ),
+        ];
+        final actionButtons = [
+          _IconLabelButton(
+            icon: Icons.favorite,
+            label: 'LIVES',
+            badgeText: '${livesRemaining}/${GameSession.maxLives}',
+            onPressed: onRecoverLife,
+            highlight: livesRemaining <= 1,
+          ),
+          shareButton,
+          _IconLabelButton(
+            icon: Icons.lightbulb_outline,
+            label: 'HINTS',
+            badgeText: hintsRemaining > 0 ? 'x$hintsRemaining' : 'WATCH',
+            onPressed: onHintPressed,
+            highlight: hintsRemaining == 0,
+          ),
+        ];
+
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  infoBadges.first,
+                  const SizedBox(width: 12),
+                  infoBadges.last,
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 16,
+                runSpacing: 12,
+                children: actionButtons,
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            infoBadges.first,
+            const Spacer(),
+            infoBadges.last,
+            const SizedBox(width: 16),
+            ...actionButtons
+                .expand((button) => [button, const SizedBox(width: 12)])
+                .toList()
+              ..removeLast(),
+          ],
+        );
+      },
     );
   }
 }
@@ -446,8 +482,12 @@ class _InfoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.28),
+        color: theme.colorScheme.primaryContainer.withOpacity(0.65),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.15),
+          width: 1.1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,7 +496,7 @@ class _InfoBadge extends StatelessWidget {
             label,
             style: theme.textTheme.labelLarge?.copyWith(
               fontSize: 12,
-              color: theme.colorScheme.onSurface.withOpacity(0.65),
+              color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
             ),
           ),
           Text(
@@ -464,6 +504,7 @@ class _InfoBadge extends StatelessWidget {
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
+              color: theme.colorScheme.onPrimaryContainer,
             ),
           ),
         ],
@@ -491,8 +532,8 @@ class _IconLabelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final background = highlight
-        ? theme.colorScheme.secondary.withOpacity(0.2)
-        : Colors.white.withOpacity(0.3);
+        ? theme.colorScheme.secondary.withOpacity(0.18)
+        : theme.colorScheme.surface.withOpacity(0.7);
     final iconColor = highlight
         ? theme.colorScheme.secondary
         : theme.colorScheme.onSurface.withOpacity(0.8);
@@ -506,6 +547,18 @@ class _IconLabelButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: background,
               shape: BoxShape.circle,
+              border: Border.all(
+                color: highlight
+                    ? theme.colorScheme.secondary.withOpacity(0.4)
+                    : theme.colorScheme.outline.withOpacity(0.18),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.shadow,
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Icon(icon, color: iconColor),
           ),
@@ -515,6 +568,7 @@ class _IconLabelButton extends StatelessWidget {
             style: theme.textTheme.labelLarge?.copyWith(
               fontSize: 12,
               letterSpacing: 1.2,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           if (badgeText != null) ...[
