@@ -98,13 +98,27 @@ class GameSession extends ChangeNotifier {
   GameResult recordCompletion(GradientPuzzleLevel level, int moves,
       {required Duration duration, required int hintsUsed}) {
     final levelIndex = levels.indexOf(level);
+    final previousProgress = _progress.progressFor(level.id);
+    final previousBest = previousProgress.bestMoves;
+    final bool shouldUpdateBest =
+        previousBest == null || moves < previousBest;
+    final bool flawlessSolve = hintsUsed == 0;
+    final efficiencyCap = (level.tileCount * 3) ~/ 2;
+    final efficiencyThreshold =
+        efficiencyCap < level.tileCount ? level.tileCount : efficiencyCap;
+    final bool efficientSolve = moves <= efficiencyThreshold;
+    var rewardsEarned = 1;
+    if (shouldUpdateBest) {
+      rewardsEarned += 1;
+    }
+    if (flawlessSolve) {
+      rewardsEarned += 1;
+    }
+    final livesEarned = flawlessSolve && efficientSolve ? 1 : 0;
     if (levelIndex >= 0) {
-      final previous = _progress.progressFor(level.id);
-      final bestMoves = previous.bestMoves;
-      final shouldUpdateBest = bestMoves == null || moves < bestMoves;
-      final updatedLevel = previous.copyWith(
+      final updatedLevel = previousProgress.copyWith(
         status: LevelStatus.completed,
-        bestMoves: shouldUpdateBest ? moves : bestMoves,
+        bestMoves: shouldUpdateBest ? moves : previousBest,
       );
       _progress = _progress.updateLevel(updatedLevel);
       final nextIndex = levelIndex + 1;
@@ -116,12 +130,21 @@ class GameSession extends ChangeNotifier {
       _highestUnlocked = _progress.highestUnlockedIndex(levels);
       unawaited(_progressRepository.saveProgress(_progress));
     }
+    if (rewardsEarned > 0) {
+      _rewards += rewardsEarned;
+    }
+    if (livesEarned > 0) {
+      _lives += livesEarned;
+    }
     notifyListeners();
     return GameResult(
       levelId: level.id,
       moves: moves,
       hintsUsed: hintsUsed,
       duration: duration,
+      livesEarned: livesEarned,
+      rewardsEarned: rewardsEarned,
+      isNewRecord: shouldUpdateBest,
     );
   }
 
@@ -155,11 +178,6 @@ class GameSession extends ChangeNotifier {
       _hints++;
       notifyListeners();
     }
-  }
-
-  void rewardPlayer() {
-    _rewards++;
-    notifyListeners();
   }
 
   void resetSession() {

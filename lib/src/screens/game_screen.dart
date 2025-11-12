@@ -62,7 +62,6 @@ class _GameScreenState extends State<GameScreen> {
     if (controller.isSolved) {
       final level = session.currentLevel;
       if (level != null) {
-        session.rewardPlayer();
         final result = session.recordCompletion(
           level,
           controller.moveCount,
