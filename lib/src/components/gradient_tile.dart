@@ -19,8 +19,8 @@ class GradientTileWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderColor = isHighlighted
-        ? Colors.white.withOpacity(0.9)
-        : Colors.white.withOpacity(tile.fixed ? 0.4 : 0.25);
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.white.withValues(alpha: tile.fixed ? 0.4 : 0.25);
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: dimmed ? 0.2 : 1,
@@ -38,7 +38,7 @@ class GradientTileWidget extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(tile.fixed ? 0.05 : 0.12),
+              color: Colors.black.withValues(alpha: tile.fixed ? 0.05 : 0.12),
               blurRadius: tile.fixed ? 6 : 14,
               offset: const Offset(0, 6),
             ),
@@ -48,7 +48,7 @@ class GradientTileWidget extends StatelessWidget {
             ? Center(
                 child: Icon(
                   Icons.close,
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   size: size * 0.35,
                 ),
               )

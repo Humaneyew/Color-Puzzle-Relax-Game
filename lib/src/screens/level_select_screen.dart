@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../components/game_header.dart';
-import '../data/game_state.dart';
 import '../data/level.dart';
 import '../logic/game_session.dart';
 import 'game_screen.dart';
@@ -125,8 +124,8 @@ class _ModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              theme.colorScheme.primaryContainer.withOpacity(0.9),
-              theme.colorScheme.secondaryContainer.withOpacity(0.75),
+              theme.colorScheme.primaryContainer.withValues(alpha: 0.9),
+              theme.colorScheme.secondaryContainer.withValues(alpha: 0.75),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -140,7 +139,7 @@ class _ModeCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.15),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(
@@ -164,7 +163,7 @@ class _ModeCard extends StatelessWidget {
                       'Relaxing and elegant. No pressure.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onPrimaryContainer
-                            .withOpacity(0.75),
+                            .withValues(alpha: 0.75),
                       ),
                     ),
                   ],
@@ -173,7 +172,7 @@ class _ModeCard extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 color:
-                    theme.colorScheme.onPrimaryContainer.withOpacity(0.6),
+                    theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.6),
               ),
             ],
           ),
@@ -190,7 +189,7 @@ class _LifeHintInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      color: theme.colorScheme.secondaryContainer.withOpacity(0.55),
+      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.55),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Column(
@@ -245,7 +244,7 @@ class _RuleBullet extends StatelessWidget {
           child: Text(
             text,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.8),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
         ),
@@ -389,16 +388,16 @@ class _LevelBadge extends StatelessWidget {
     final background = isCurrent
         ? theme.colorScheme.primary
         : unlocked
-            ? theme.colorScheme.primaryContainer.withOpacity(0.75)
-            : theme.colorScheme.surfaceVariant.withOpacity(0.55);
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.75)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55);
     final borderColor = isCurrent
         ? theme.colorScheme.primary
         : unlocked
-            ? theme.colorScheme.primary.withOpacity(0.25)
-            : theme.colorScheme.outline.withOpacity(0.35);
+            ? theme.colorScheme.primary.withValues(alpha: 0.25)
+            : theme.colorScheme.outline.withValues(alpha: 0.35);
     final foreground = isCurrent
         ? theme.colorScheme.onPrimary
-        : theme.colorScheme.onSurface.withOpacity(unlocked ? 0.85 : 0.55);
+        : theme.colorScheme.onSurface.withValues(alpha: unlocked ? 0.85 : 0.55);
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
@@ -414,7 +413,7 @@ class _LevelBadge extends StatelessWidget {
           boxShadow: [
             if (isCurrent)
               BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.35),
+                color: theme.colorScheme.primary.withValues(alpha: 0.35),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -459,15 +458,15 @@ class _LockedLevelBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.25),
+          color: theme.colorScheme.outline.withValues(alpha: 0.25),
         ),
       ),
       child: Icon(
         Icons.lock,
-        color: theme.colorScheme.onSurface.withOpacity(0.35),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
       ),
     );
   }

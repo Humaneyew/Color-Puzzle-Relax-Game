@@ -18,7 +18,7 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
   ]);
   final soundService = SoundService();
-  final levelLoader = const LevelLoader();
+  final levelLoader = LevelLoader();
   final levels = await levelLoader.loadLevels();
   final progressRepository = await ProgressRepository.create();
   final session = GameSession(
