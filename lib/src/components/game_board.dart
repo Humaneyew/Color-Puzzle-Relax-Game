@@ -219,7 +219,7 @@ class _TileDropTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DragTarget<int>(
-      onWillAcceptWithDetails: (details) => details.data != null,
+      onWillAcceptWithDetails: (details) => true,
       onAcceptWithDetails: (details) {
         controller.swapTiles(details.data, index);
         onDragEnd();
