@@ -11,6 +11,18 @@ import '../data/player_progress.dart';
 import 'services/progress_repository.dart';
 
 class GameSession extends ChangeNotifier {
+  /// Maximum number of lives a player can have at any time.
+  static const int maxLives = 5;
+
+  /// Maximum number of hints a player can store without watching an ad.
+  static const int maxHints = 5;
+
+  /// Lives granted when a new session is created or fully reset.
+  static const int initialLives = 5;
+
+  /// Hints granted when a new session is created or fully reset.
+  static const int initialHints = 3;
+
   GameSession({
     required this.levels,
     required AdService adService,
@@ -29,8 +41,8 @@ class GameSession extends ChangeNotifier {
   GameBoardController? _controller;
   int _currentLevelIndex = 0;
 
-  int _lives = 5;
-  int _hints = 3;
+  int _lives = initialLives;
+  int _hints = initialHints;
   int _rewards = 0;
   int _highestUnlocked = 0;
   PlayerProgress _progress;
@@ -42,6 +54,10 @@ class GameSession extends ChangeNotifier {
   int get lives => _lives;
 
   int get hints => _hints;
+
+  bool get isLivesFull => _lives >= maxLives;
+
+  bool get isHintsFull => _hints >= maxHints;
 
   int get rewards => _rewards;
 
@@ -133,8 +149,11 @@ class GameSession extends ChangeNotifier {
     if (rewardsEarned > 0) {
       _rewards += rewardsEarned;
     }
-    if (livesEarned > 0) {
-      _lives += livesEarned;
+    var appliedLives = 0;
+    if (livesEarned > 0 && !isLivesFull) {
+      final before = _lives;
+      _lives = (_lives + livesEarned).clamp(0, maxLives);
+      appliedLives = _lives - before;
     }
     notifyListeners();
     return GameResult(
@@ -142,12 +161,16 @@ class GameSession extends ChangeNotifier {
       moves: moves,
       hintsUsed: hintsUsed,
       duration: duration,
-      livesEarned: livesEarned,
+      livesEarned: appliedLives,
       rewardsEarned: rewardsEarned,
       isNewRecord: shouldUpdateBest,
     );
   }
 
+  /// Consumes a life when the player makes an invalid move.
+  ///
+  /// Lives will never drop below zero and listeners are notified about the
+  /// change so the UI can react (e.g. to show warnings or disable actions).
   void decrementLife() {
     if (_lives > 0) {
       _lives--;
@@ -155,34 +178,60 @@ class GameSession extends ChangeNotifier {
     }
   }
 
-  Future<void> watchAdForLife() async {
+  /// Attempts to restore a single life by showing a rewarded ad.
+  ///
+  /// Returns `true` if the ad was completed and a life was granted. When the
+  /// player is already at the life cap no ad is shown and `false` is returned.
+  Future<bool> watchAdForLife() async {
+    if (isLivesFull) {
+      return false;
+    }
     final result = await _adService.showRewardedAd();
     if (result) {
-      _lives++;
+      _lives = (_lives + 1).clamp(0, maxLives);
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
+  /// Applies a hint on the current board and consumes one stored hint.
+  ///
+  /// Returns the index that was solved or highlighted. If the board is already
+  /// solved or there were no hints available, `-1` is returned and no changes
+  /// are made to the game board.
   Future<int> applyHint() async {
     if (_hints <= 0) {
       return -1;
     }
-    _hints--;
-    notifyListeners();
-    return _controller?.applyHint() ?? -1;
-  }
-
-  Future<void> watchAdForHint() async {
-    final result = await _adService.showRewardedAd();
-    if (result) {
-      _hints++;
+    final index = _controller?.applyHint() ?? -1;
+    if (index >= 0) {
+      _hints--;
       notifyListeners();
     }
+    return index;
+  }
+
+  /// Attempts to grant an additional hint after watching a rewarded ad.
+  ///
+  /// Returns `true` if the hint was granted. When the hint storage is already
+  /// full the ad is skipped and `false` is returned.
+  Future<bool> watchAdForHint() async {
+    if (isHintsFull) {
+      return false;
+    }
+    final result = await _adService.showRewardedAd();
+    if (result) {
+      _hints = (_hints + 1).clamp(0, maxHints);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   void resetSession() {
-    _lives = 5;
-    _hints = 3;
+    _lives = initialLives;
+    _hints = initialHints;
     _rewards = 0;
     _progress = PlayerProgress.initial(levels);
     _applyProgress(_progress);
