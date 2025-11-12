@@ -213,7 +213,7 @@ class _LevelPreview extends StatelessWidget {
           height: dimension,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.25),
+            color: Colors.white.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
@@ -238,7 +238,7 @@ class _LevelPreview extends StatelessWidget {
                     color: level.colorForIndex(index),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.35),
+                      color: Colors.white.withValues(alpha: 0.35),
                       width: 1.2,
                     ),
                   ),

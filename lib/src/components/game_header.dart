@@ -26,7 +26,7 @@ class GameHeader extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
     final subtitleStyle = theme.textTheme.titleMedium?.copyWith(
-      color: theme.colorScheme.onSurface.withOpacity(0.7),
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,19 +63,19 @@ class GameHeader extends StatelessWidget {
             _StatChip(
               icon: Icons.favorite,
               label: state.lives.toString(),
-              backgroundColor: Colors.white.withOpacity(0.35),
+              backgroundColor: Colors.white.withValues(alpha: 0.35),
               iconColor: const Color(0xFFDF7F5B),
             ),
             _StatChip(
               icon: Icons.lightbulb_outline,
               label: state.hints.toString(),
-              backgroundColor: Colors.white.withOpacity(0.3),
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
               iconColor: theme.colorScheme.primary,
             ),
             _StatChip(
               icon: Icons.stars_rounded,
               label: state.rewards.toString(),
-              backgroundColor: Colors.white.withOpacity(0.3),
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
               iconColor: theme.colorScheme.primary,
             ),
           ],
@@ -134,7 +134,7 @@ class _RoundIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Material(
-      color: Colors.white.withOpacity(0.18),
+      color: Colors.white.withValues(alpha: 0.18),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -144,7 +144,7 @@ class _RoundIconButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 22,
-            color: theme.colorScheme.onSurface.withOpacity(0.85),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
           ),
         ),
       ),

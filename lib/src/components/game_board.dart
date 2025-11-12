@@ -219,9 +219,9 @@ class _TileDropTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DragTarget<int>(
-      onWillAccept: (data) => data != null,
-      onAccept: (fromIndex) {
-        controller.swapTiles(fromIndex, index);
+      onWillAcceptWithDetails: (details) => details.data != null,
+      onAcceptWithDetails: (details) {
+        controller.swapTiles(details.data, index);
         onDragEnd();
       },
       builder: (context, candidateData, rejectedData) {
@@ -248,12 +248,12 @@ class _BoardGridPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cellSize = size.width / gridSize;
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.25)
+      ..color = Colors.white.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
 
     final fixedPaint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
+      ..color = Colors.white.withValues(alpha: 0.08)
       ..style = PaintingStyle.fill;
 
     for (final index in fixedCells) {

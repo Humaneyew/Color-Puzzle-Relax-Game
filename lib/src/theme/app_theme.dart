@@ -12,38 +12,45 @@ ThemeData buildAppTheme() {
     displayColor: textColor,
   );
 
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: primary,
+    brightness: Brightness.light,
+  ).copyWith(
+    primary: primary,
+    onPrimary: Colors.white,
+    secondary: secondary,
+    onSecondary: Colors.white,
+    error: const Color(0xFFB3261E),
+    onError: Colors.white,
+    surface: surface,
+    onSurface: textColor,
+    surfaceContainerHighest: const Color(0xFFF0DFCB),
+    surfaceContainerHigh: const Color(0xFFF4E5D2),
+    surfaceContainer: surface,
+    surfaceContainerLow: const Color(0xFFFFF0E0),
+    surfaceContainerLowest: surface,
+    onSurfaceVariant: textColor.withValues(alpha: 0.75),
+    outline: textColor.withValues(alpha: 0.2),
+    outlineVariant: textColor.withValues(alpha: 0.12),
+    shadow: Colors.black.withValues(alpha: 0.1),
+    scrim: Colors.black.withValues(alpha: 0.35),
+    inverseSurface: const Color(0xFF214C64),
+    onInverseSurface: Colors.white,
+    tertiary: const Color(0xFFE5B973),
+    onTertiary: const Color(0xFF3F2E11),
+    tertiaryContainer: const Color(0xFFFFE3BC),
+    onTertiaryContainer: const Color(0xFF4C3A15),
+    primaryContainer: const Color(0xFFE0F1FA),
+    onPrimaryContainer: const Color(0xFF0F3A51),
+    secondaryContainer: const Color(0xFFFFDDD6),
+    onSecondaryContainer: const Color(0xFF4C1F1A),
+    surfaceTint: Colors.transparent,
+  );
+
   return ThemeData(
     useMaterial3: true,
     scaffoldBackgroundColor: background,
-    colorScheme: ColorScheme(
-      brightness: Brightness.light,
-      primary: primary,
-      onPrimary: Colors.white,
-      secondary: secondary,
-      onSecondary: Colors.white,
-      error: const Color(0xFFB3261E),
-      onError: Colors.white,
-      background: background,
-      onBackground: textColor,
-      surface: surface,
-      onSurface: textColor,
-      surfaceVariant: const Color(0xFFF0DFCB),
-      onSurfaceVariant: textColor.withOpacity(0.75),
-      outline: textColor.withOpacity(0.2),
-      outlineVariant: textColor.withOpacity(0.12),
-      inverseSurface: const Color(0xFF214C64),
-      onInverseSurface: Colors.white,
-      shadow: Colors.black.withOpacity(0.1),
-      scrim: Colors.black.withOpacity(0.35),
-      tertiary: const Color(0xFFE5B973),
-      onTertiary: const Color(0xFF3F2E11),
-      tertiaryContainer: const Color(0xFFFFE3BC),
-      onTertiaryContainer: const Color(0xFF4C3A15),
-      primaryContainer: const Color(0xFFE0F1FA),
-      onPrimaryContainer: const Color(0xFF0F3A51),
-      secondaryContainer: const Color(0xFFFFDDD6),
-      onSecondaryContainer: const Color(0xFF4C1F1A),
-    ),
+    colorScheme: colorScheme,
     textTheme: baseTextTheme.copyWith(
       headlineMedium: baseTextTheme.headlineMedium?.copyWith(
         fontWeight: FontWeight.w700,
@@ -61,21 +68,21 @@ ThemeData buildAppTheme() {
         height: 1.4,
       ),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
       ),
       surfaceTintColor: Colors.transparent,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: surface,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
       ),
-      shadowColor: Colors.black.withOpacity(0.06),
+      shadowColor: Colors.black.withValues(alpha: 0.06),
     ),
     iconTheme: const IconThemeData(color: textColor),
     filledButtonTheme: FilledButtonThemeData(
@@ -104,12 +111,12 @@ ThemeData buildAppTheme() {
       ),
     ),
     dividerTheme: DividerThemeData(
-      color: textColor.withOpacity(0.08),
+      color: textColor.withValues(alpha: 0.08),
       thickness: 1,
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(12),
       ),
       textStyle: baseTextTheme.bodySmall?.copyWith(color: Colors.white),
