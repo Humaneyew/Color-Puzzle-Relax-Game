@@ -13,3 +13,4 @@ build/
 # Generated files
 coverage/
 android/local.properties
+android/.gradle/
