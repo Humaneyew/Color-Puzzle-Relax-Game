@@ -8,10 +8,16 @@ class GameResult {
     required this.moves,
     required this.hintsUsed,
     required this.duration,
+    required this.livesEarned,
+    required this.rewardsEarned,
+    required this.isNewRecord,
   });
 
   final String levelId;
   final int moves;
   final int hintsUsed;
   final Duration duration;
+  final int livesEarned;
+  final int rewardsEarned;
+  final bool isNewRecord;
 }

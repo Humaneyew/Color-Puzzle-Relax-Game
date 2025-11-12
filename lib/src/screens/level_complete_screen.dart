@@ -37,20 +37,13 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
         showDialog<void>(
           context: context,
           builder: (_) => RewardDialog(
-            livesEarned: 1,
-            moveCount: widget.result.moves,
+            levelName: widget.level.name,
+            result: widget.result,
             bestScore: bestScore,
             worldAverage: average,
-            onContinue: () => Navigator.of(context).pop(),
-            onViewPuzzle: () => Navigator.of(context).pop(),
-            onRetry: () {
-              Navigator.of(context).pop();
-              _retryLevel();
-            },
-            onShare: () {
-              Navigator.of(context).pop();
-              _shareResults();
-            },
+            onContinue: _goToNextLevel,
+            onRetry: _retryLevel,
+            onShare: _shareResults,
           ),
         );
       });
@@ -152,16 +145,26 @@ class _LevelCompleteScreenState extends State<LevelCompleteScreen> {
     );
   }
 
-  void _shareResults() {
+  Future<void> _shareResults() async {
     if (!mounted) return;
     final hintLabel = widget.result.hintsUsed == 0
         ? 'no hints'
         : '${widget.result.hintsUsed} hint${widget.result.hintsUsed == 1 ? '' : 's'}';
+    final rewardSummary = <String>[];
+    if (widget.result.livesEarned > 0) {
+      rewardSummary.add('+${widget.result.livesEarned} life');
+    }
+    if (widget.result.rewardsEarned > 0) {
+      rewardSummary.add('+${widget.result.rewardsEarned} pts');
+    }
+    final rewardLabel = rewardSummary.isEmpty
+        ? ''
+        : ' (${rewardSummary.join(', ')})';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Shared ${widget.level.name}: ${widget.result.moves} moves in '
-          '${_formatDuration(widget.result.duration)} with $hintLabel.',
+          '${_formatDuration(widget.result.duration)} with $hintLabel$rewardLabel.',
         ),
       ),
     );
