@@ -1,3 +1,4 @@
+import '../../../../core/constants/app_constants.dart';
 import '../models/level_model.dart';
 
 abstract class LevelDataSource {
@@ -22,30 +23,16 @@ class LocalLevelDataSource implements LevelDataSource {
 }
 
 List<LevelModel> _seedLevels() {
-  return <LevelModel>[
-    LevelModel(
-      id: 'level_1',
-      title: 'Basic Mode',
-      description: 'Relaxing and elegant. No pressure.',
-      difficulty: 1,
-      boardSize: 4,
-      isUnlocked: true,
-    ),
-    LevelModel(
-      id: 'level_2',
-      title: 'Gradient Flow',
-      description: 'Introduce diagonal color shifts.',
-      difficulty: 2,
-      boardSize: 5,
-      isUnlocked: false,
-    ),
-    LevelModel(
-      id: 'level_3',
-      title: 'Chromatic Symphony',
-      description: 'Complex palette transitions.',
-      difficulty: 3,
-      boardSize: 6,
-      isUnlocked: false,
-    ),
-  ];
+  const int totalLevels = 500;
+  return List<LevelModel>.generate(totalLevels, (int index) {
+    final int levelNumber = index + 1;
+    return LevelModel(
+      id: 'level_$levelNumber',
+      title: 'Level $levelNumber',
+      description: 'Relax and solve puzzle $levelNumber.',
+      difficulty: 1 + (index ~/ 50),
+      boardSize: AppConstants.defaultBoardSize,
+      isUnlocked: levelNumber == 1,
+    );
+  });
 }
