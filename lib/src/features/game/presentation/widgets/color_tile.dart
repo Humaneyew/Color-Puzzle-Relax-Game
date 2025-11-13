@@ -20,8 +20,6 @@ class ColorTile extends StatefulWidget {
   final bool isDragging;
   final bool reducedMotion;
 
-  static const BorderRadius borderRadius = BorderRadius.all(Radius.circular(16));
-
   @override
   State<ColorTile> createState() => _ColorTileState();
 }
@@ -83,60 +81,27 @@ class _ColorTileState extends State<ColorTile> {
     final bool isAnchor = widget.tile.isAnchor;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final Color borderColor = widget.isDropTarget
-        ? colors.primary
-        : widget.isSelected
-            ? colors.onSurface.withOpacity(0.6)
-            : Colors.black.withOpacity(0.12);
-    final List<BoxShadow> shadows = <BoxShadow>[
-      BoxShadow(
-        color: Colors.black.withOpacity(widget.isDragging ? 0.12 : 0.18),
-        blurRadius: widget.isDragging ? 12 : 18,
-        offset: const Offset(0, 8),
-      ),
-    ];
 
-    final Widget tileContent = DecoratedBox(
-      decoration: BoxDecoration(
-        color: widget.tile.color,
-        borderRadius: ColorTile.borderRadius,
-        border: Border.all(
-          color: borderColor,
-          width: widget.isDropTarget ? 3 : 1.4,
-        ),
-        boxShadow: shadows,
-      ),
+    final Widget tileContent = ColoredBox(
+      color: widget.tile.color,
       child: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
-          Positioned.fill(
-            child: AnimatedContainer(
-              duration: widget.reducedMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 180),
-              decoration: BoxDecoration(
-                color: widget.isDragging
-                    ? Colors.black.withOpacity(0.12)
-                    : widget.isSelected
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.transparent,
-              ),
-            ),
-          ),
           if (isAnchor)
             Positioned(
               top: 8,
               right: 8,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.push_pin,
-                  size: 14,
-                  color: colors.primary,
-                ),
+              child: Text(
+                '×',
+                style: theme.textTheme.titleMedium?.copyWith(
+                      color: colors.onSurface.withOpacity(0.4),
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colors.onSurface.withOpacity(0.4),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
         ],
@@ -159,10 +124,7 @@ class _ColorTileState extends State<ColorTile> {
         scale: _targetScale,
         duration: _pressDuration,
         curve: Curves.easeOut,
-        child: ClipRRect(
-          borderRadius: ColorTile.borderRadius,
-          child: tileContent,
-        ),
+        child: tileContent,
       ),
     );
   }
