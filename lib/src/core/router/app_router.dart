@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/game/presentation/pages/home_page.dart';
 import '../../features/game/presentation/pages/level_overview_page.dart';
+import '../../features/game/presentation/pages/settings_page.dart';
 
 GoRouter createRouter() {
   return GoRouter(
@@ -24,6 +25,13 @@ GoRouter createRouter() {
             child: LevelOverviewPage(levelId: levelId),
           );
         },
+      ),
+      GoRoute(
+        name: SettingsPage.routeName,
+        path: SettingsPage.routePath,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SettingsPage(),
+        ),
       ),
     ],
     observers: <NavigatorObserver>[
