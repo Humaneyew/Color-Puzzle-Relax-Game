@@ -21,3 +21,11 @@ dev_dependencies:
   flutter_lints: ^3.0.1
 flutter:
   uses-material-design: true
+  fonts:
+    - family: SF Pro
+      fonts:
+        - asset: assets/fonts/SF-Pro-Display-Regular.otf
+        - asset: assets/fonts/SF-Pro-Display-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SF-Pro-Display-Bold.otf
+          weight: 700
