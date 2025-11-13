@@ -9,7 +9,6 @@ import '../state/game_state.dart';
 import '../widgets/board_grid.dart';
 import '../widgets/victory_wave.dart';
 import 'home_page.dart';
-import 'main_menu_page.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key, required this.levelId});
@@ -193,7 +192,7 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) {
       return;
     }
-    context.go(MainMenuPage.routePath);
+    context.go(HomePage.routePath);
   }
 
   void _handleExitToLevels(BuildContext context) {
