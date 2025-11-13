@@ -50,40 +50,17 @@ class LevelCard extends StatelessWidget {
           child: AspectRatio(
             aspectRatio: 1,
             child: Stack(
+              alignment: Alignment.center,
               children: <Widget>[
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Text(
-                    number.toString(),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                          color: isUnlocked
-                              ? colors.onPrimaryContainer.withOpacity(0.8)
-                              : colors.onSurfaceVariant.withOpacity(0.8),
-                          fontWeight: FontWeight.w600,
-                        ) ??
-                        TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: isUnlocked
-                              ? colors.onPrimaryContainer.withOpacity(0.8)
-                              : colors.onSurfaceVariant.withOpacity(0.8),
-                        ),
-                  ),
-                ),
                 if (isUnlocked)
-                  Center(
-                    child: Text(
-                      number.toString(),
-                      style: numberStyle,
-                    ),
-                  ),
-                if (!isUnlocked)
-                  Center(
-                    child: Icon(
-                      Icons.lock,
-                      color: colors.onSurfaceVariant.withOpacity(0.8),
-                    ),
+                  Text(
+                    number.toString(),
+                    style: numberStyle,
+                  )
+                else
+                  Icon(
+                    Icons.lock,
+                    color: colors.onSurfaceVariant.withOpacity(0.8),
                   ),
               ],
             ),
