@@ -20,8 +20,6 @@ class HomePage extends StatelessWidget {
     final GameState state = context.watch<GameNotifier>().state;
 
     final ThemeData theme = Theme.of(context);
-    final int unlockedLevels = state.levels.where((Level level) => level.isUnlocked).length;
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -32,7 +30,6 @@ class HomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _TopBar(
-                unlockedCount: unlockedLevels,
                 onCompleteSession: state.session == null
                     ? null
                     : () => context.read<GameNotifier>().completeCurrentSession(),
@@ -125,9 +122,8 @@ class _LevelGrid extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.unlockedCount, this.onCompleteSession});
+  const _TopBar({this.onCompleteSession});
 
-  final int unlockedCount;
   final VoidCallback? onCompleteSession;
 
   @override
@@ -135,14 +131,8 @@ class _TopBar extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        _StatusBadge(
-          icon: Icons.favorite,
-          label: unlockedCount.toString(),
-          backgroundColor: colors.primaryContainer,
-          foregroundColor: colors.onPrimaryContainer,
-        ),
-        const Spacer(),
         _StatusBadge(
           icon: Icons.play_arrow,
           label: '',
