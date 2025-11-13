@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/board.dart';
@@ -33,55 +31,32 @@ class _BoardGridState extends State<BoardGrid> {
   Widget build(BuildContext context) {
     final bool reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final Duration swapDuration = reducedMotion ? Duration.zero : BoardGrid._swapDuration;
-    final ThemeData theme = Theme.of(context);
-
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double dimension = min(constraints.maxWidth, constraints.maxHeight);
+        final double dimension = constraints.maxWidth;
         final double tileSize = dimension / widget.board.size;
-        final BorderRadius boardRadius = BorderRadius.circular(28);
 
-        return Center(
-          child: Container(
-            width: dimension,
-            height: dimension,
-            decoration: BoxDecoration(
-              borderRadius: boardRadius,
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.14),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: boardRadius,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                ),
-                child: Stack(
-                  children: widget.board.tiles.map((Tile tile) {
-                    return _AnimatedTile(
-                      key: ValueKey<int>(tile.correctIndex),
-                      tile: tile,
-                      tileSize: tileSize,
-                      gridSize: widget.board.size,
-                      controller: widget.controller,
-                      disableInteractions:
-                          widget.disableInteractions || widget.controller.isLocked,
-                      reducedMotion: reducedMotion,
-                      swapDuration: swapDuration,
-                      hoverIndex: _hoverIndex,
-                      draggingIndex: _draggingIndex,
-                      onHoverChanged: _handleHoverChanged,
-                      onDragChanged: _handleDragChanged,
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
+        return SizedBox(
+          width: dimension,
+          height: dimension,
+          child: Stack(
+            children: widget.board.tiles.map((Tile tile) {
+              return _AnimatedTile(
+                key: ValueKey<int>(tile.correctIndex),
+                tile: tile,
+                tileSize: tileSize,
+                gridSize: widget.board.size,
+                controller: widget.controller,
+                disableInteractions:
+                    widget.disableInteractions || widget.controller.isLocked,
+                reducedMotion: reducedMotion,
+                swapDuration: swapDuration,
+                hoverIndex: _hoverIndex,
+                draggingIndex: _draggingIndex,
+                onHoverChanged: _handleHoverChanged,
+                onDragChanged: _handleDragChanged,
+              );
+            }).toList(),
           ),
         );
       },
