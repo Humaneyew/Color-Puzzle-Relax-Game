@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/painting.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/colors/color_blindness.dart';
