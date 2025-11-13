@@ -25,7 +25,7 @@ class MainMenuPage extends StatelessWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            onPressed: () => context.push(HomePage.routePath),
+            onPressed: () => context.go(HomePage.routePath),
             child: const Text('Старт'),
           ),
         ),

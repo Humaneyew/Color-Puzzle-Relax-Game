@@ -14,7 +14,7 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   static const String routeName = 'home';
-  static const String routePath = '/';
+  static const String routePath = '/play';
 
   @override
   Widget build(BuildContext context) {
