@@ -35,9 +35,52 @@ LabColor srgbToLab(Color color) {
 }
 
 Color labToSrgb(LabColor lab) {
-  final double fy = (lab.l + 16.0) / 116.0;
-  final double fx = lab.a / 500.0 + fy;
-  final double fz = fy - lab.b / 200.0;
+  List<double> linearRgb = _labToLinearRgb(lab.l, lab.a, lab.b);
+
+  bool _isInGamut(List<double> rgb) {
+    return rgb[0] >= 0.0 &&
+        rgb[0] <= 1.0 &&
+        rgb[1] >= 0.0 &&
+        rgb[1] <= 1.0 &&
+        rgb[2] >= 0.0 &&
+        rgb[2] <= 1.0;
+  }
+
+  if (!_isInGamut(linearRgb) && (lab.a != 0.0 || lab.b != 0.0)) {
+    final List<double> neutral = _labToLinearRgb(lab.l, 0.0, 0.0);
+    if (_isInGamut(neutral)) {
+      double low = 0.0;
+      double high = 1.0;
+      for (int i = 0; i < 12; i++) {
+        final double mid = (low + high) / 2.0;
+        final List<double> candidate =
+            _labToLinearRgb(lab.l, lab.a * mid, lab.b * mid);
+        if (_isInGamut(candidate)) {
+          low = mid;
+          linearRgb = candidate;
+        } else {
+          high = mid;
+        }
+      }
+    }
+  }
+
+  double r = _linearToSrgb(linearRgb[0]);
+  double g = _linearToSrgb(linearRgb[1]);
+  double b = _linearToSrgb(linearRgb[2]);
+
+  return Color.fromARGB(
+    255,
+    _clampToChannel(r * 255.0),
+    _clampToChannel(g * 255.0),
+    _clampToChannel(b * 255.0),
+  );
+}
+
+List<double> _labToLinearRgb(double l, double a, double b) {
+  final double fy = (l + 16.0) / 116.0;
+  final double fx = a / 500.0 + fy;
+  final double fz = fy - b / 200.0;
 
   final double x = _xn * _pivotLab(fx);
   final double y = _yn * _pivotLab(fy);
@@ -47,20 +90,14 @@ Color labToSrgb(LabColor lab) {
   final double yNorm = y / 100.0;
   final double zNorm = z / 100.0;
 
-  double r = xNorm * 3.2404542 + yNorm * -1.5371385 + zNorm * -0.4985314;
-  double g = xNorm * -0.9692660 + yNorm * 1.8760108 + zNorm * 0.0415560;
-  double b = xNorm * 0.0556434 + yNorm * -0.2040259 + zNorm * 1.0572252;
+  final double r =
+      xNorm * 3.2404542 + yNorm * -1.5371385 + zNorm * -0.4985314;
+  final double g =
+      xNorm * -0.9692660 + yNorm * 1.8760108 + zNorm * 0.0415560;
+  final double bLinear =
+      xNorm * 0.0556434 + yNorm * -0.2040259 + zNorm * 1.0572252;
 
-  r = _linearToSrgb(r);
-  g = _linearToSrgb(g);
-  b = _linearToSrgb(b);
-
-  return Color.fromARGB(
-    255,
-    _clampToChannel(r * 255.0),
-    _clampToChannel(g * 255.0),
-    _clampToChannel(b * 255.0),
-  );
+  return <double>[r, g, bLinear];
 }
 
 int _clampToChannel(double value) {

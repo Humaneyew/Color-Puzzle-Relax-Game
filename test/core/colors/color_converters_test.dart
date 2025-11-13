@@ -30,4 +30,60 @@ void main() {
       expect(converted.blue.toDouble(), closeTo(color.blue.toDouble(), 1));
     }
   });
+
+  test('labToSrgb gracefully reduces extreme positive chroma', () {
+    final LabColor saturated = LabColor(60, 200, 200);
+    final LabColor verySaturated = LabColor(60, 400, 400);
+
+    final Color saturatedColor = labToSrgb(saturated);
+    final Color verySaturatedColor = labToSrgb(verySaturated);
+
+    final LabColor saturatedRoundTrip = srgbToLab(saturatedColor);
+    final LabColor verySaturatedRoundTrip = srgbToLab(verySaturatedColor);
+
+    expect(saturatedRoundTrip.l, closeTo(60, 0.1));
+    expect(saturatedRoundTrip.a, greaterThan(0));
+    expect(saturatedRoundTrip.b, greaterThan(0));
+    expect(saturatedRoundTrip.a, closeTo(saturatedRoundTrip.b, 0.2));
+
+    expect(verySaturatedRoundTrip.l, closeTo(60, 0.1));
+    expect(verySaturatedRoundTrip.a, greaterThan(0));
+    expect(verySaturatedRoundTrip.b, greaterThan(0));
+    expect(
+      verySaturatedRoundTrip.a,
+      closeTo(saturatedRoundTrip.a, 0.2),
+    );
+    expect(
+      verySaturatedRoundTrip.b,
+      closeTo(saturatedRoundTrip.b, 0.2),
+    );
+  });
+
+  test('labToSrgb preserves hue direction for extreme mixed chroma', () {
+    final LabColor saturated = LabColor(60, -200, 200);
+    final LabColor verySaturated = LabColor(60, -400, 400);
+
+    final Color saturatedColor = labToSrgb(saturated);
+    final Color verySaturatedColor = labToSrgb(verySaturated);
+
+    final LabColor saturatedRoundTrip = srgbToLab(saturatedColor);
+    final LabColor verySaturatedRoundTrip = srgbToLab(verySaturatedColor);
+
+    expect(saturatedRoundTrip.l, closeTo(60, 0.1));
+    expect(saturatedRoundTrip.a, lessThan(0));
+    expect(saturatedRoundTrip.b, greaterThan(0));
+    expect(saturatedRoundTrip.a.abs(), closeTo(saturatedRoundTrip.b, 0.5));
+
+    expect(verySaturatedRoundTrip.l, closeTo(60, 0.1));
+    expect(verySaturatedRoundTrip.a, lessThan(0));
+    expect(verySaturatedRoundTrip.b, greaterThan(0));
+    expect(
+      verySaturatedRoundTrip.a,
+      closeTo(saturatedRoundTrip.a, 0.5),
+    );
+    expect(
+      verySaturatedRoundTrip.b,
+      closeTo(saturatedRoundTrip.b, 0.5),
+    );
+  });
 }
