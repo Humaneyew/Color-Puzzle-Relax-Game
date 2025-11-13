@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../domain/entities/board.dart';
 import '../../domain/entities/game_session.dart';
+import '../../domain/entities/tile.dart';
 import '../state/board_controller.dart';
 import '../state/game_notifier.dart';
 import '../state/game_state.dart';
@@ -145,18 +147,13 @@ class _GameScreenState extends State<GameScreen> {
                 Positioned.fill(
                   child: IgnorePointer(
                     ignoring: !state.showResults,
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: _ResultsPanel(
-                          visible: state.showResults,
-                          hasNextLevel: notifier.nextLevelId() != null,
-                          onNextLevel: () => _handleNextLevel(context),
-                          onReturnToMenu: () => _handleReturnToMenu(context),
-                          reducedMotion: reducedMotion,
-                        ),
-                      ),
+                    child: _WinOverlay(
+                      visible: state.showResults,
+                      board: session.board,
+                      hasNextLevel: notifier.nextLevelId() != null,
+                      onNextLevel: () => _handleNextLevel(context),
+                      onReturnToMenu: () => _handleReturnToMenu(context),
+                      reducedMotion: reducedMotion,
                     ),
                   ),
                 ),
@@ -235,9 +232,10 @@ class _GameHeader extends StatelessWidget {
   }
 }
 
-class _ResultsPanel extends StatelessWidget {
-  const _ResultsPanel({
+class _WinOverlay extends StatelessWidget {
+  const _WinOverlay({
     required this.visible,
+    required this.board,
     required this.hasNextLevel,
     required this.onNextLevel,
     required this.onReturnToMenu,
@@ -245,6 +243,7 @@ class _ResultsPanel extends StatelessWidget {
   });
 
   final bool visible;
+  final Board board;
   final bool hasNextLevel;
   final VoidCallback onNextLevel;
   final VoidCallback onReturnToMenu;
@@ -255,47 +254,69 @@ class _ResultsPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Duration duration = reducedMotion
         ? Duration.zero
-        : const Duration(milliseconds: 280);
+        : const Duration(milliseconds: 220);
 
-    return AnimatedSlide(
-      offset: visible ? Offset.zero : const Offset(0, 1.2),
+    return AnimatedOpacity(
+      opacity: visible ? 1 : 0,
       duration: duration,
       curve: Curves.easeOutCubic,
-      child: AnimatedOpacity(
-        opacity: visible ? 1 : 0,
-        duration: duration,
-        child: Material(
-          elevation: 16,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+        ),
+        child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+            padding: const EdgeInsets.all(24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text(
-                  'Level Complete!',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (hasNextLevel)
-                  FilledButton(
-                    onPressed: visible ? onNextLevel : null,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'LEVEL COMPLETED!',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                    child: const Text('Next level'),
+                    if (!hasNextLevel)
+                      _OverlayActionButton(
+                        label: 'MENU',
+                        onPressed: visible ? onReturnToMenu : null,
+                        variant: _OverlayActionVariant.primary,
+                      ),
+                    if (hasNextLevel)
+                      _OverlayActionButton(
+                        label: 'MENU',
+                        onPressed: visible ? onReturnToMenu : null,
+                        variant: _OverlayActionVariant.outlined,
+                      ),
+                    if (hasNextLevel) const SizedBox(width: 12),
+                    if (hasNextLevel)
+                      _OverlayActionButton(
+                        label: 'NEXT',
+                        onPressed: visible ? onNextLevel : null,
+                        variant: _OverlayActionVariant.primary,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      final double boardSize =
+                          min(constraints.maxHeight, constraints.maxWidth);
+                      return Center(
+                        child: SizedBox(
+                          width: boardSize,
+                          height: boardSize,
+                          child: _SolvedBoardPoster(board: board),
+                        ),
+                      );
+                    },
                   ),
-                if (hasNextLevel) const SizedBox(height: 12),
-                FilledButton.tonal(
-                  onPressed: visible ? onReturnToMenu : null,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(hasNextLevel ? 'Back to menu' : 'Return to menu'),
                 ),
               ],
             ),
@@ -303,5 +324,98 @@ class _ResultsPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SolvedBoardPoster extends StatelessWidget {
+  const _SolvedBoardPoster({required this.board});
+
+  final Board board;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int gridSize = board.size;
+        final double extent = min(constraints.maxWidth, constraints.maxHeight);
+        final double tileSize = extent / gridSize;
+
+        return RepaintBoundary(
+          child: ClipRect(
+            child: Stack(
+              fit: StackFit.expand,
+              children: board.tiles.map((Tile tile) {
+                final int row = tile.correctIndex ~/ gridSize;
+                final int column = tile.correctIndex % gridSize;
+                final double left = column * tileSize;
+                final double top = row * tileSize;
+                final double width =
+                    column == gridSize - 1 ? extent - left : tileSize;
+                final double height =
+                    row == gridSize - 1 ? extent - top : tileSize;
+                return Positioned(
+                  left: left,
+                  top: top,
+                  width: width,
+                  height: height,
+                  child: ColoredBox(color: tile.color),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+enum _OverlayActionVariant { primary, outlined }
+
+class _OverlayActionButton extends StatelessWidget {
+  const _OverlayActionButton({
+    required this.label,
+    required this.onPressed,
+    required this.variant,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final _OverlayActionVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    late final ButtonStyle baseStyle;
+    switch (variant) {
+      case _OverlayActionVariant.primary:
+        baseStyle = FilledButton.styleFrom(
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        );
+        break;
+      case _OverlayActionVariant.outlined:
+        baseStyle = OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        );
+        break;
+    }
+
+    switch (variant) {
+      case _OverlayActionVariant.primary:
+        return FilledButton(
+          style: baseStyle,
+          onPressed: onPressed,
+          child: Text(label),
+        );
+      case _OverlayActionVariant.outlined:
+        return OutlinedButton(
+          style: baseStyle,
+          onPressed: onPressed,
+          child: Text(label),
+        );
+    }
   }
 }

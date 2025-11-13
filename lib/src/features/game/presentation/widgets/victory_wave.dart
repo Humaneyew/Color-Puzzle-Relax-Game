@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -31,7 +30,7 @@ class _VictoryWaveState extends State<VictoryWave>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 200),
     )..addStatusListener(_handleStatusChange);
 
     if (widget.active && !widget.reducedMotion) {
@@ -78,7 +77,7 @@ class _VictoryWaveState extends State<VictoryWave>
 
   void _scheduleReducedMotionCallback() {
     _reducedMotionTimer?.cancel();
-    _reducedMotionTimer = Timer(const Duration(milliseconds: 360), () {
+    _reducedMotionTimer = Timer(const Duration(milliseconds: 160), () {
       if (mounted) {
         widget.onCompleted?.call();
       }
@@ -93,16 +92,14 @@ class _VictoryWaveState extends State<VictoryWave>
         child: ClipRRect(
           borderRadius: widget.borderRadius,
           child: AnimatedOpacity(
-            opacity: widget.active ? 0.28 : 0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(widget.active ? 0.24 : 0),
-              ),
+            opacity: widget.active ? 0.24 : 0,
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            child: ColoredBox(
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary
+                  .withOpacity(widget.active ? 0.24 : 0),
             ),
           ),
         ),
@@ -120,22 +117,22 @@ class _VictoryWaveState extends State<VictoryWave>
         child: AnimatedBuilder(
           animation: _controller,
           builder: (BuildContext context, Widget? child) {
-            final double progress = Curves.easeOut.transform(_controller.value);
-            final double radius = lerpDouble(0.2, 1.3, progress)!;
+            final double progress =
+                Curves.easeOutCubic.transform(_controller.value).clamp(0.0, 1.0);
             final double opacity = (1 - progress).clamp(0.0, 1.0);
-            return DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: radius,
-                  colors: <Color>[
-                    Theme.of(context)
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: progress,
+                child: Opacity(
+                  opacity: opacity,
+                  child: ColoredBox(
+                    color: Theme.of(context)
                         .colorScheme
                         .primary
-                        .withOpacity(opacity * 0.45),
-                    Theme.of(context).colorScheme.primary.withOpacity(0),
-                  ],
-                  stops: const <double>[0, 1],
+                        .withOpacity(0.28),
+                  ),
                 ),
               ),
             );
