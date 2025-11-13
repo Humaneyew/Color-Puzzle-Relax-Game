@@ -21,11 +21,12 @@ class LevelCard extends StatelessWidget {
     final bool isUnlocked = level.isUnlocked;
 
     final Color backgroundColor = isUnlocked
-        ? colors.primaryContainer.withOpacity(0.8)
-        : colors.surfaceVariant;
+        ? colors.primaryContainer
+        : colors.surfaceVariant.withOpacity(0.85);
     final Color borderColor = isUnlocked
         ? colors.primary
         : colors.outlineVariant ?? colors.outline.withOpacity(0.5);
+    final BorderRadius borderRadius = BorderRadius.circular(8);
     final TextStyle numberStyle = (theme.textTheme.titleLarge ??
             const TextStyle(fontSize: 22, fontWeight: FontWeight.w700))
         .copyWith(
@@ -35,37 +36,41 @@ class LevelCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: isUnlocked ? onTap : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: isUnlocked ? 2 : 1,
-            ),
-          ),
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: Stack(
-              alignment: Alignment.center,
-              children: <Widget>[
-                if (isUnlocked)
-                  Text(
-                    number.toString(),
-                    style: numberStyle,
-                  )
-                else
-                  Icon(
-                    Icons.lock,
-                    color: colors.onSurfaceVariant.withOpacity(0.8),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double dimension = constraints.hasBoundedWidth
+              ? constraints.maxWidth
+              : constraints.biggest.shortestSide;
+
+          return InkWell(
+            onTap: isUnlocked ? onTap : null,
+            borderRadius: borderRadius,
+            child: SizedBox.square(
+              dimension: dimension,
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: borderRadius,
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.5,
                   ),
-              ],
+                ),
+                child: Center(
+                  child: isUnlocked
+                      ? Text(
+                          number.toString(),
+                          style: numberStyle,
+                        )
+                      : Icon(
+                          Icons.lock,
+                          color: colors.onSurfaceVariant.withOpacity(0.8),
+                        ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
