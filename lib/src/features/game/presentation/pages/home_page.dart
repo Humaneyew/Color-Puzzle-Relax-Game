@@ -8,6 +8,7 @@ import '../state/game_notifier.dart';
 import '../state/game_state.dart';
 import '../widgets/level_card.dart';
 import 'level_overview_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -29,11 +30,7 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _TopBar(
-                onCompleteSession: state.session == null
-                    ? null
-                    : () => context.read<GameNotifier>().completeCurrentSession(),
-              ),
+              const _TopBar(),
               const SizedBox(height: 24),
               Text(
                 'COLOR',
@@ -122,9 +119,7 @@ class _LevelGrid extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({this.onCompleteSession});
-
-  final VoidCallback? onCompleteSession;
+  const _TopBar();
 
   @override
   Widget build(BuildContext context) {
@@ -134,11 +129,11 @@ class _TopBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
         _StatusBadge(
-          icon: Icons.play_arrow,
+          icon: Icons.settings,
           label: '',
           backgroundColor: colors.secondaryContainer,
           foregroundColor: colors.onSecondaryContainer,
-          onTap: onCompleteSession,
+          onTap: () => context.push(SettingsPage.routePath),
         ),
       ],
     );
