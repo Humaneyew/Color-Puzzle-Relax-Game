@@ -10,7 +10,7 @@ class AppTheme {
           seedColor: const Color(0xFFd4a373),
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF5E5C0),
+        scaffoldBackgroundColor: const Color(0xFFEFD5A9),
         appBarTheme: const AppBarTheme(
           elevation: 0,
           backgroundColor: Colors.transparent,
