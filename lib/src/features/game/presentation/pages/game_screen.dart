@@ -138,7 +138,6 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _GameFooter(session: session),
                       const SizedBox(height: 96),
                     ],
                   ),
@@ -152,7 +151,6 @@ class _GameScreenState extends State<GameScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: _ResultsPanel(
                           visible: state.showResults,
-                          session: session,
                           hasNextLevel: notifier.nextLevelId() != null,
                           onNextLevel: () => _handleNextLevel(context),
                           onReturnToMenu: () => _handleReturnToMenu(context),
@@ -237,33 +235,9 @@ class _GameHeader extends StatelessWidget {
   }
 }
 
-class _GameFooter extends StatelessWidget {
-  const _GameFooter({required this.session});
-
-  final GameSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? labelStyle = theme.textTheme.titleMedium;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Text('Moves used', style: labelStyle),
-        Text(
-          session.movesUsed.toString(),
-          style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
-}
-
 class _ResultsPanel extends StatelessWidget {
   const _ResultsPanel({
     required this.visible,
-    required this.session,
     required this.hasNextLevel,
     required this.onNextLevel,
     required this.onReturnToMenu,
@@ -271,7 +245,6 @@ class _ResultsPanel extends StatelessWidget {
   });
 
   final bool visible;
-  final GameSession session;
   final bool hasNextLevel;
   final VoidCallback onNextLevel;
   final VoidCallback onReturnToMenu;
@@ -306,12 +279,6 @@ class _ResultsPanel extends StatelessWidget {
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Moves used: ${session.movesUsed}',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 24),
                 if (hasNextLevel)
