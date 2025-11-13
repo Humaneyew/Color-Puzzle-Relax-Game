@@ -1,14 +1,17 @@
-import '../../domain/entities/game_board.dart';
+import '../../../../core/logic/board_generator.dart';
+import '../../domain/entities/board.dart';
 import '../../domain/entities/game_session.dart';
 import '../../domain/entities/level.dart';
+import '../../domain/entities/level_config.dart';
 import '../../domain/repositories/game_repository.dart';
 import '../datasources/local_level_data_source.dart';
 import '../models/level_model.dart';
 
 class GameRepositoryImpl implements GameRepository {
-  GameRepositoryImpl(this._dataSource);
+  GameRepositoryImpl(this._dataSource, this._boardGenerator);
 
   final LevelDataSource _dataSource;
+  final BoardGenerator _boardGenerator;
 
   @override
   Future<List<Level>> fetchLevels() async {
@@ -23,9 +26,12 @@ class GameRepositoryImpl implements GameRepository {
       orElse: () => throw ArgumentError('Unknown level: $levelId'),
     );
 
+    final LevelConfig config = LevelConfig.fromLevel(level);
+    final Board board = _boardGenerator.buildBoard(config);
+
     return GameSession(
       level: level,
-      board: GameBoard.empty(level.boardSize),
+      board: board,
       movesUsed: 0,
     );
   }

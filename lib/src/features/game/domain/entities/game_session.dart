@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'game_board.dart';
+import 'board.dart';
 import 'level.dart';
 
 class GameSession extends Equatable {
@@ -11,12 +11,12 @@ class GameSession extends Equatable {
   });
 
   final Level level;
-  final GameBoard board;
+  final Board board;
   final int movesUsed;
 
   GameSession copyWith({
     Level? level,
-    GameBoard? board,
+    Board? board,
     int? movesUsed,
   }) {
     return GameSession(
