@@ -22,7 +22,7 @@ class LevelCard extends StatelessWidget {
 
     final Color backgroundColor = isUnlocked
         ? colors.primaryContainer
-        : colors.surfaceVariant.withOpacity(0.85);
+        : const Color(0xFFD9C199);
     final Color borderColor = isUnlocked
         ? colors.primary
         : colors.outlineVariant ?? colors.outline.withOpacity(0.5);
