@@ -12,11 +12,6 @@ class GameState {
     this.showVictoryWave = false,
     this.showResults = false,
     this.hasSavedCompletion = false,
-    this.bestScore,
-    this.worldAverage,
-    this.hintsRemaining = 0,
-    this.isProvidingHint = false,
-    this.isSharing = false,
   });
 
   final GameStatus status;
@@ -26,11 +21,6 @@ class GameState {
   final bool showVictoryWave;
   final bool showResults;
   final bool hasSavedCompletion;
-  final int? bestScore;
-  final int? worldAverage;
-  final int hintsRemaining;
-  final bool isProvidingHint;
-  final bool isSharing;
 
   GameState copyWith({
     GameStatus? status,
@@ -42,11 +32,6 @@ class GameState {
     bool? showVictoryWave,
     bool? showResults,
     bool? hasSavedCompletion,
-    int? bestScore,
-    int? worldAverage,
-    int? hintsRemaining,
-    bool? isProvidingHint,
-    bool? isSharing,
   }) {
     return GameState(
       status: status ?? this.status,
@@ -56,11 +41,6 @@ class GameState {
       showVictoryWave: showVictoryWave ?? this.showVictoryWave,
       showResults: showResults ?? this.showResults,
       hasSavedCompletion: hasSavedCompletion ?? this.hasSavedCompletion,
-      bestScore: bestScore ?? this.bestScore,
-      worldAverage: worldAverage ?? this.worldAverage,
-      hintsRemaining: hintsRemaining ?? this.hintsRemaining,
-      isProvidingHint: isProvidingHint ?? this.isProvidingHint,
-      isSharing: isSharing ?? this.isSharing,
     );
   }
 }

@@ -33,9 +33,6 @@ class GameRepositoryImpl implements GameRepository {
       level: level,
       board: board,
       movesUsed: 0,
-      bestScore: level.bestScore,
-      worldAverage: level.worldAverage,
-      hintsRemaining: level.hintsRemaining,
     );
   }
 
@@ -49,11 +46,7 @@ class GameRepositoryImpl implements GameRepository {
       throw ArgumentError('Cannot save progress for unknown level: ${session.level.id}');
     }
 
-    updated[index] = updated[index].copyWith(
-      isUnlocked: true,
-      bestScore: session.bestScore,
-      hintsRemaining: session.hintsRemaining,
-    );
+    updated[index] = updated[index].copyWith(isUnlocked: true);
 
     if (index + 1 < updated.length) {
       final LevelModel next = updated[index + 1];

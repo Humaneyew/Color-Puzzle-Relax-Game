@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/board.dart';
@@ -33,16 +31,7 @@ class GameNotifier extends ChangeNotifier {
   }
 
   Future<void> loadLevels() async {
-    _updateState(
-      _state.copyWith(
-        status: GameStatus.loading,
-        bestScore: null,
-        worldAverage: null,
-        hintsRemaining: 0,
-        isProvidingHint: false,
-        isSharing: false,
-      ),
-    );
+    _updateState(_state.copyWith(status: GameStatus.loading));
     try {
       final List<Level> levels = await _getLevels();
       _updateState(
@@ -53,11 +42,6 @@ class GameNotifier extends ChangeNotifier {
           showResults: false,
           showVictoryWave: false,
           hasSavedCompletion: false,
-          bestScore: null,
-          worldAverage: null,
-          hintsRemaining: 0,
-          isProvidingHint: false,
-          isSharing: false,
         ),
       );
     } catch (error) {
@@ -65,25 +49,21 @@ class GameNotifier extends ChangeNotifier {
         _state.copyWith(
           status: GameStatus.error,
           errorMessage: error.toString(),
-          isProvidingHint: false,
-          isSharing: false,
         ),
       );
     }
   }
 
   Future<void> startLevel(String levelId) async {
-      _updateState(
-        _state.copyWith(
-          status: GameStatus.loading,
-          clearError: true,
-          showVictoryWave: false,
-          showResults: false,
-          hasSavedCompletion: false,
-          isProvidingHint: false,
-          isSharing: false,
-        ),
-      );
+    _updateState(
+      _state.copyWith(
+        status: GameStatus.loading,
+        clearError: true,
+        showVictoryWave: false,
+        showResults: false,
+        hasSavedCompletion: false,
+      ),
+    );
 
     try {
       final GameSession session = await _startLevel(levelId);
@@ -94,11 +74,6 @@ class GameNotifier extends ChangeNotifier {
           showVictoryWave: false,
           showResults: false,
           hasSavedCompletion: false,
-          bestScore: session.bestScore,
-          worldAverage: session.worldAverage,
-          hintsRemaining: session.hintsRemaining,
-          isProvidingHint: false,
-          isSharing: false,
         ),
       );
     } catch (error) {
@@ -106,8 +81,6 @@ class GameNotifier extends ChangeNotifier {
         _state.copyWith(
           status: GameStatus.error,
           errorMessage: error.toString(),
-          isProvidingHint: false,
-          isSharing: false,
         ),
       );
     }
@@ -130,11 +103,6 @@ class GameNotifier extends ChangeNotifier {
           showVictoryWave: false,
           showResults: false,
           hasSavedCompletion: false,
-          bestScore: null,
-          worldAverage: null,
-          hintsRemaining: 0,
-          isProvidingHint: false,
-          isSharing: false,
         ),
       );
       await loadLevels();
@@ -143,8 +111,6 @@ class GameNotifier extends ChangeNotifier {
         _state.copyWith(
           status: GameStatus.error,
           errorMessage: error.toString(),
-          isProvidingHint: false,
-          isSharing: false,
         ),
       );
     }
@@ -155,19 +121,14 @@ class GameNotifier extends ChangeNotifier {
       return;
     }
     _updateState(
-        _state.copyWith(
-          status: GameStatus.ready,
-          clearSession: true,
-          showVictoryWave: false,
-          showResults: false,
-          hasSavedCompletion: false,
-          bestScore: null,
-          worldAverage: null,
-          hintsRemaining: 0,
-          isProvidingHint: false,
-          isSharing: false,
-        ),
-      );
+      _state.copyWith(
+        status: GameStatus.ready,
+        clearSession: true,
+        showVictoryWave: false,
+        showResults: false,
+        hasSavedCompletion: false,
+      ),
+    );
   }
 
   void swapTiles(int fromIndex, int toIndex) {
@@ -197,143 +158,29 @@ class GameNotifier extends ChangeNotifier {
     updatedTiles[toIndex] = first.copyWith(currentIndex: toIndex);
 
     final Board updatedBoard = board.copyWith(tiles: updatedTiles);
-    GameSession updatedSession = session.copyWith(
+    final GameSession updatedSession = session.copyWith(
       board: updatedBoard,
       movesUsed: session.movesUsed + 1,
     );
 
     final bool solved = updatedBoard.isSolved();
-    int? bestScore = updatedSession.bestScore;
-    if (solved) {
-      final int currentScore = updatedSession.movesUsed;
-      bestScore =
-          bestScore == null ? currentScore : min(bestScore, currentScore);
-      updatedSession = updatedSession.copyWith(bestScore: bestScore);
-    }
-
-    final GameState previousState = _state;
-    final bool shouldSave = solved && !previousState.hasSavedCompletion;
 
     _updateState(
-      previousState.copyWith(
+      _state.copyWith(
         session: updatedSession,
         showVictoryWave: solved,
-        showResults: solved || previousState.showResults,
-        hasSavedCompletion:
-            solved ? (previousState.hasSavedCompletion || shouldSave) : false,
-        bestScore: bestScore,
-        worldAverage: updatedSession.worldAverage,
-        hintsRemaining: updatedSession.hintsRemaining,
+        showResults: solved || _state.showResults,
+        hasSavedCompletion: solved ? _state.hasSavedCompletion : false,
       ),
     );
 
-    if (shouldSave) {
+    if (solved && !_state.hasSavedCompletion) {
       unawaited(_saveProgress(updatedSession).then((_) => _refreshLevels()));
-    }
-  }
-
-  void provideHint() {
-    final GameSession? session = _state.session;
-    if (session == null) {
-      return;
-    }
-
-    if (_state.showResults ||
-        _state.showVictoryWave ||
-        _state.status == GameStatus.loading) {
-      return;
-    }
-
-    if (session.hintsRemaining <= 0 || _state.isProvidingHint) {
-      return;
-    }
-
-    _updateState(_state.copyWith(isProvidingHint: true));
-
-    final Board board = session.board;
-    final List<Tile> candidates = board.movables
-        .where((Tile tile) => !tile.isInCorrectPosition)
-        .toList();
-    if (candidates.isEmpty) {
-      _updateState(_state.copyWith(isProvidingHint: false));
-      return;
-    }
-
-    final Tile target = candidates.first;
-    final Tile swapTile = board.tileAt(target.correctIndex);
-
-    final List<Tile> updatedTiles = List<Tile>.from(board.tiles);
-    updatedTiles[target.currentIndex] =
-        swapTile.copyWith(currentIndex: target.currentIndex);
-    updatedTiles[target.correctIndex] =
-        target.copyWith(currentIndex: target.correctIndex);
-
-    final Board updatedBoard = board.copyWith(tiles: updatedTiles);
-    GameSession updatedSession = session.copyWith(
-      board: updatedBoard,
-      movesUsed: session.movesUsed + 1,
-      hintsRemaining: session.hintsRemaining - 1,
-    );
-
-    final bool solved = updatedBoard.isSolved();
-    int? bestScore = updatedSession.bestScore;
-    if (solved) {
-      final int currentScore = updatedSession.movesUsed;
-      bestScore =
-          bestScore == null ? currentScore : min(bestScore, currentScore);
-      updatedSession = updatedSession.copyWith(bestScore: bestScore);
-    }
-
-    final GameState previousState = _state;
-    final bool shouldSave = solved && !previousState.hasSavedCompletion;
-
-    _updateState(
-      previousState.copyWith(
-        session: updatedSession,
-        showVictoryWave: solved,
-        showResults: solved || previousState.showResults,
-        hasSavedCompletion:
-            solved ? (previousState.hasSavedCompletion || shouldSave) : false,
-        bestScore: bestScore,
-        worldAverage: updatedSession.worldAverage,
-        hintsRemaining: updatedSession.hintsRemaining,
-        isProvidingHint: false,
-      ),
-    );
-
-    if (shouldSave) {
-      unawaited(_saveProgress(updatedSession).then((_) => _refreshLevels()));
-    }
-  }
-
-  Future<void> shareProgress({bool allowDuringOverlay = false}) async {
-    final GameSession? session = _state.session;
-    if (session == null) {
-      return;
-    }
-
-    if (!allowDuringOverlay && (_state.showResults || _state.showVictoryWave)) {
-      return;
-    }
-
-    if (_state.isSharing || _state.status == GameStatus.loading) {
-      return;
-    }
-
-    _updateState(_state.copyWith(isSharing: true));
-
-    final String levelValue =
-        session.level.title.isNotEmpty ? session.level.title : session.level.id;
-    final String message =
-        'I just solved "$levelValue" in ${session.movesUsed} moves in Color Puzzle Relax!';
-
-    try {
-      await Share.share(
-        message,
-        subject: 'Color Puzzle Relax',
+      _updateState(
+        _state.copyWith(
+          hasSavedCompletion: true,
+        ),
       );
-    } finally {
-      _updateState(_state.copyWith(isSharing: false));
     }
   }
 
@@ -354,7 +201,6 @@ class GameNotifier extends ChangeNotifier {
       _state.copyWith(
         showResults: false,
         showVictoryWave: false,
-        isProvidingHint: false,
       ),
     );
   }

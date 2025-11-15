@@ -53,9 +53,6 @@ class _BoardGridState extends State<BoardGrid> {
         final double topPadding = slackHeight > 0 ? (slackHeight / 2).floorToDouble() : 0;
         final double bottomPadding = slackHeight - topPadding;
 
-        final ColorScheme colors = Theme.of(context).colorScheme;
-        const BorderRadius boardRadius = BorderRadius.all(Radius.circular(24));
-
         return SizedBox(
           width: maxWidth.isFinite ? maxWidth : boardWidth,
           height: hasFiniteHeight ? availableHeight : boardHeight,
@@ -63,49 +60,28 @@ class _BoardGridState extends State<BoardGrid> {
             padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
             child: Align(
               alignment: Alignment.topCenter,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  borderRadius: boardRadius,
-                  border: Border.all(
-                    color: colors.outline.withOpacity(0.18),
-                    width: 1.2,
-                  ),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: colors.shadow.withOpacity(0.2),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                      spreadRadius: -2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: boardRadius,
-                  child: SizedBox(
-                    width: boardWidth,
-                    height: boardHeight,
-                    child: Stack(
-                      children: widget.board.tiles.map((Tile tile) {
-                        return _AnimatedTile(
-                          key: ValueKey<int>(tile.correctIndex),
-                          tile: tile,
-                          tileSize: tileSize,
-                          tileSizePx: tileSizePx,
-                          gridSize: widget.board.size,
-                          controller: widget.controller,
-                          disableInteractions:
-                              widget.disableInteractions || widget.controller.isLocked,
-                          reducedMotion: reducedMotion,
-                          swapDuration: swapDuration,
-                          hoverIndex: _hoverIndex,
-                          draggingIndex: _draggingIndex,
-                          onHoverChanged: _handleHoverChanged,
-                          onDragChanged: _handleDragChanged,
-                        );
-                      }).toList(),
-                    ),
-                  ),
+              child: SizedBox(
+                width: boardWidth,
+                height: boardHeight,
+                child: Stack(
+                  children: widget.board.tiles.map((Tile tile) {
+                    return _AnimatedTile(
+                      key: ValueKey<int>(tile.correctIndex),
+                      tile: tile,
+                      tileSize: tileSize,
+                      tileSizePx: tileSizePx,
+                      gridSize: widget.board.size,
+                      controller: widget.controller,
+                      disableInteractions:
+                          widget.disableInteractions || widget.controller.isLocked,
+                      reducedMotion: reducedMotion,
+                      swapDuration: swapDuration,
+                      hoverIndex: _hoverIndex,
+                      draggingIndex: _draggingIndex,
+                      onHoverChanged: _handleHoverChanged,
+                      onDragChanged: _handleDragChanged,
+                    );
+                  }).toList(),
                 ),
               ),
             ),
