@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -296,8 +298,10 @@ class _WinOverlay extends StatelessWidget {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (BuildContext context, BoxConstraints constraints) {
-                      final double boardSize =
-                          min(constraints.maxHeight, constraints.maxWidth);
+                      final double boardSize = math.min(
+                        constraints.maxHeight,
+                        constraints.maxWidth,
+                      );
                       return Center(
                         child: SizedBox(
                           width: boardSize,
@@ -327,7 +331,10 @@ class _SolvedBoardPoster extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final int gridSize = board.size;
-        final double extent = min(constraints.maxWidth, constraints.maxHeight);
+        final double extent = math.min(
+          constraints.maxWidth,
+          constraints.maxHeight,
+        );
         final double tileSize = extent / gridSize;
 
         return RepaintBoundary(
