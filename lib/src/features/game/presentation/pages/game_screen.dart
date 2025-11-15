@@ -32,6 +32,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   late final BoardController _boardController;
   bool _requestedSession = false;
+  bool _showCompletionTitle = false;
 
   @override
   void initState() {
@@ -85,80 +86,102 @@ class _GameScreenState extends State<GameScreen> {
           );
         }
 
-        return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => _handleExitToLevels(context),
-            ),
-            title: Text(session.level.title),
-          ),
-          body: SafeArea(
-            child: Stack(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      _GameHeader(session: session),
-                      const SizedBox(height: 16),
-                      Flexible(
-                        child: LayoutBuilder(
-                          builder: (BuildContext context, BoxConstraints constraints) {
-                            final double boardSize =
-                                min(constraints.maxWidth, constraints.maxHeight);
+        if (_showCompletionTitle != state.showResults) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _showCompletionTitle = state.showResults;
+            });
+          });
+        }
 
-                            return Align(
-                              alignment: Alignment.topCenter,
-                              child: SizedBox(
-                                width: boardSize,
-                                height: boardSize,
-                                child: Stack(
-                                  children: <Widget>[
-                                    BoardGrid(
-                                      board: session.board,
-                                      controller: _boardController,
-                                      disableInteractions: state.showResults,
-                                    ),
-                                    Positioned.fill(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(6),
-                                        child: VictoryWave(
-                                          active: state.showVictoryWave,
-                                          borderRadius: BorderRadius.circular(28),
-                                          reducedMotion: reducedMotion,
-                                          onCompleted: notifier.dismissVictoryWave,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const SizedBox(height: 96),
-                    ],
+        final String levelValue =
+            session.level.title.isNotEmpty ? session.level.title : session.level.id;
+        final String levelLabel =
+            _showCompletionTitle ? 'LEVEL COMPLETED!' : 'LEVEL $levelValue';
+
+        return Scaffold(
+          body: Stack(
+            children: <Widget>[
+              Column(
+                children: <Widget>[
+                  _GameHud(
+                    levelLabel: levelLabel,
+                    movesUsed: session.movesUsed,
+                    reducedMotion: reducedMotion,
+                    onBack: () => _handleExitToLevels(context),
+                    onShare: () {},
+                    onHints: () {},
+                    onNext: state.showResults ? () => _handleNextLevel(context) : null,
                   ),
-                ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    ignoring: !state.showResults,
-                    child: _WinOverlay(
-                      visible: state.showResults,
-                      board: session.board,
-                      hasNextLevel: notifier.nextLevelId() != null,
-                      onNextLevel: () => _handleNextLevel(context),
-                      onReturnToMenu: () => _handleReturnToMenu(context),
-                      reducedMotion: reducedMotion,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          const SizedBox(height: 16),
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder:
+                                  (BuildContext context, BoxConstraints constraints) {
+                                final double boardSize =
+                                    min(constraints.maxWidth, constraints.maxHeight);
+
+                                return Align(
+                                  alignment: Alignment.topCenter,
+                                  child: SizedBox(
+                                    width: boardSize,
+                                    height: boardSize,
+                                    child: Stack(
+                                      children: <Widget>[
+                                        BoardGrid(
+                                          board: session.board,
+                                          controller: _boardController,
+                                          disableInteractions: state.showResults,
+                                        ),
+                                        Positioned.fill(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(6),
+                                            child: VictoryWave(
+                                              active: state.showVictoryWave,
+                                              borderRadius: BorderRadius.circular(28),
+                                              reducedMotion: reducedMotion,
+                                              onCompleted: notifier.dismissVictoryWave,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const SizedBox(height: 96),
+                        ],
+                      ),
                     ),
                   ),
+                ],
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !state.showResults,
+                  child: _WinOverlay(
+                    visible: state.showResults,
+                    board: session.board,
+                    hasNextLevel: notifier.nextLevelId() != null,
+                    onNextLevel: () => _handleNextLevel(context),
+                    onReturnToMenu: () => _handleReturnToMenu(context),
+                    reducedMotion: reducedMotion,
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -207,27 +230,142 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
-class _GameHeader extends StatelessWidget {
-  const _GameHeader({required this.session});
+class _GameHud extends StatelessWidget {
+  const _GameHud({
+    required this.levelLabel,
+    required this.movesUsed,
+    required this.reducedMotion,
+    required this.onBack,
+    required this.onShare,
+    required this.onHints,
+    this.onNext,
+  });
 
-  final GameSession session;
+  final String levelLabel;
+  final int movesUsed;
+  final bool reducedMotion;
+  final VoidCallback onBack;
+  final VoidCallback onShare;
+  final VoidCallback onHints;
+  final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final TextStyle? titleStyle =
-        theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600);
-    final TextStyle? subtitleStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
+    final TextStyle? levelStyle =
+        theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
+    final TextStyle? movesStyle = theme.textTheme.bodyMedium?.copyWith(
+      letterSpacing: 0.8,
     );
+    final Duration animationDuration =
+        reducedMotion ? Duration.zero : const Duration(milliseconds: 220);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(session.level.title, style: titleStyle),
-        const SizedBox(height: 4),
-        Text(session.level.description, style: subtitleStyle),
-      ],
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            TextButton.icon(
+              onPressed: onBack,
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Back'),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  AnimatedSwitcher(
+                    duration: animationDuration,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      if (reducedMotion) {
+                        return child;
+                      }
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: Text(
+                      levelLabel,
+                      key: ValueKey<String>(levelLabel),
+                      textAlign: TextAlign.center,
+                      style: levelStyle,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  AnimatedSwitcher(
+                    duration: animationDuration,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      if (reducedMotion) {
+                        return child;
+                      }
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: Text(
+                      'MOVES $movesUsed',
+                      key: ValueKey<int>(movesUsed),
+                      style: movesStyle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                IconButton(
+                  tooltip: 'Share',
+                  onPressed: onShare,
+                  icon: const Icon(Icons.share_outlined),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Hints',
+                  onPressed: onHints,
+                  icon: const Icon(Icons.lightbulb_outline),
+                ),
+                AnimatedSwitcher(
+                  duration: animationDuration,
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    if (reducedMotion) {
+                      return child;
+                    }
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  child: onNext == null
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: FilledButton(
+                            key: const ValueKey<String>('next'),
+                            onPressed: onNext,
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: const Text('Next'),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
