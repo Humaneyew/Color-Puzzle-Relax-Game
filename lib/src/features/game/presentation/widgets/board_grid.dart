@@ -39,52 +39,45 @@ class _BoardGridState extends State<BoardGrid> {
         final double maxHeight = constraints.maxHeight;
         final int gridSize = widget.board.size;
 
+        final bool hasFiniteWidth = maxWidth.isFinite;
         final bool hasFiniteHeight = maxHeight.isFinite;
-        final double availableWidth =
-            maxWidth.isFinite ? maxWidth : (hasFiniteHeight ? maxHeight : gridSize.toDouble());
 
-        final int tileSizePx = math.max(1, (availableWidth / gridSize).floor());
-        final double tileSize = tileSizePx.toDouble();
-        final double boardWidth = tileSize * gridSize;
-        final double boardHeight = boardWidth;
+        final double fallbackExtent = gridSize.toDouble();
 
-        final double availableHeight = hasFiniteHeight ? maxHeight : boardHeight;
-        final double slackHeight = (availableHeight - boardHeight).clamp(0, double.infinity);
-        final double topPadding = slackHeight > 0 ? (slackHeight / 2).floorToDouble() : 0;
-        final double bottomPadding = slackHeight - topPadding;
+        final double availableWidth = hasFiniteWidth
+            ? math.max(maxWidth, 0)
+            : (hasFiniteHeight ? math.max(maxHeight, 0) : fallbackExtent);
+        final double availableHeight = hasFiniteHeight
+            ? math.max(maxHeight, 0)
+            : (hasFiniteWidth ? math.max(maxWidth, 0) : fallbackExtent);
+
+        final double tileWidth = availableWidth / gridSize;
+        final double tileHeight = availableHeight / gridSize;
+        final double boardWidth = tileWidth * gridSize;
+        final double boardHeight = tileHeight * gridSize;
 
         return SizedBox(
-          width: maxWidth.isFinite ? maxWidth : boardWidth,
+          width: hasFiniteWidth ? availableWidth : boardWidth,
           height: hasFiniteHeight ? availableHeight : boardHeight,
-          child: Padding(
-            padding: EdgeInsets.only(top: topPadding, bottom: bottomPadding),
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: SizedBox(
-                width: boardWidth,
-                height: boardHeight,
-                child: Stack(
-                  children: widget.board.tiles.map((Tile tile) {
-                    return _AnimatedTile(
-                      key: ValueKey<int>(tile.correctIndex),
-                      tile: tile,
-                      tileSize: tileSize,
-                      tileSizePx: tileSizePx,
-                      gridSize: widget.board.size,
-                      controller: widget.controller,
-                      disableInteractions:
-                          widget.disableInteractions || widget.controller.isLocked,
-                      reducedMotion: reducedMotion,
-                      swapDuration: swapDuration,
-                      hoverIndex: _hoverIndex,
-                      draggingIndex: _draggingIndex,
-                      onHoverChanged: _handleHoverChanged,
-                      onDragChanged: _handleDragChanged,
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
+          child: Stack(
+            children: widget.board.tiles.map((Tile tile) {
+              return _AnimatedTile(
+                key: ValueKey<int>(tile.correctIndex),
+                tile: tile,
+                tileWidth: tileWidth,
+                tileHeight: tileHeight,
+                gridSize: widget.board.size,
+                controller: widget.controller,
+                disableInteractions:
+                    widget.disableInteractions || widget.controller.isLocked,
+                reducedMotion: reducedMotion,
+                swapDuration: swapDuration,
+                hoverIndex: _hoverIndex,
+                draggingIndex: _draggingIndex,
+                onHoverChanged: _handleHoverChanged,
+                onDragChanged: _handleDragChanged,
+              );
+            }).toList(),
           ),
         );
       },
@@ -116,8 +109,8 @@ class _AnimatedTile extends StatelessWidget {
   const _AnimatedTile({
     super.key,
     required this.tile,
-    required this.tileSize,
-    required this.tileSizePx,
+    required this.tileWidth,
+    required this.tileHeight,
     required this.gridSize,
     required this.controller,
     required this.disableInteractions,
@@ -130,8 +123,8 @@ class _AnimatedTile extends StatelessWidget {
   });
 
   final Tile tile;
-  final double tileSize;
-  final int tileSizePx;
+  final double tileWidth;
+  final double tileHeight;
   final int gridSize;
   final BoardController controller;
   final bool disableInteractions;
@@ -146,20 +139,20 @@ class _AnimatedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final int row = tile.currentIndex ~/ gridSize;
     final int column = tile.currentIndex % gridSize;
-    final double top = (row * tileSizePx).toDouble();
-    final double left = (column * tileSizePx).toDouble();
-    final double dimension = tileSizePx.toDouble();
+    final double top = row * tileHeight;
+    final double left = column * tileWidth;
 
     return AnimatedPositioned(
       duration: swapDuration,
       curve: Curves.easeOutCubic,
       top: top,
       left: left,
-      width: dimension,
-      height: dimension,
+      width: tileWidth,
+      height: tileHeight,
       child: _TileDraggable(
         tile: tile,
-        tileSize: tileSize,
+        tileWidth: tileWidth,
+        tileHeight: tileHeight,
         controller: controller,
         disableInteractions: disableInteractions,
         reducedMotion: reducedMotion,
@@ -175,7 +168,8 @@ class _AnimatedTile extends StatelessWidget {
 class _TileDraggable extends StatefulWidget {
   const _TileDraggable({
     required this.tile,
-    required this.tileSize,
+    required this.tileWidth,
+    required this.tileHeight,
     required this.controller,
     required this.disableInteractions,
     required this.reducedMotion,
@@ -186,7 +180,8 @@ class _TileDraggable extends StatefulWidget {
   });
 
   final Tile tile;
-  final double tileSize;
+  final double tileWidth;
+  final double tileHeight;
   final BoardController controller;
   final bool disableInteractions;
   final bool reducedMotion;
@@ -247,8 +242,8 @@ class _TileDraggableState extends State<_TileDraggable> {
                   widget.onDragChanged(widget.tile.currentIndex, false),
               onDragEnd: (_) => widget.onDragChanged(widget.tile.currentIndex, false),
               feedback: SizedBox(
-                width: widget.tileSize,
-                height: widget.tileSize,
+                width: widget.tileWidth,
+                height: widget.tileHeight,
                 child: ColorTile(
                   tile: widget.tile,
                   isSelected: true,
