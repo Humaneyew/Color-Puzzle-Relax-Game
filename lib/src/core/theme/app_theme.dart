@@ -61,7 +61,7 @@ class AppTheme {
           color: _primaryTextColor,
           size: 24,
         ),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           color: _counterPanelColor,
           elevation: 0,
           margin: EdgeInsets.zero,
