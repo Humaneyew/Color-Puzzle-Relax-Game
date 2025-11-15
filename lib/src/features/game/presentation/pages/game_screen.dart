@@ -3,14 +3,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
-import '../../domain/entities/board.dart';
 import '../../domain/entities/game_session.dart';
-import '../../domain/entities/tile.dart';
 import '../state/board_controller.dart';
 import '../state/game_notifier.dart';
 import '../state/game_state.dart';
 import '../widgets/board_grid.dart';
+import '../widgets/game_results_dialog.dart';
 import '../widgets/victory_wave.dart';
 import 'home_page.dart';
 
@@ -33,6 +33,9 @@ class _GameScreenState extends State<GameScreen> {
   late final BoardController _boardController;
   bool _requestedSession = false;
   bool _showCompletionTitle = false;
+  bool _showResultsOverlay = false;
+  bool _showResultsDialog = false;
+  bool _wasShowingResults = false;
 
   @override
   void initState() {
@@ -97,6 +100,24 @@ class _GameScreenState extends State<GameScreen> {
           });
         }
 
+        if (_wasShowingResults != state.showResults) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _wasShowingResults = state.showResults;
+              if (state.showResults) {
+                _showResultsOverlay = true;
+                _showResultsDialog = true;
+              } else {
+                _showResultsOverlay = false;
+                _showResultsDialog = false;
+              }
+            });
+          });
+        }
+
         final String levelValue =
             session.level.title.isNotEmpty ? session.level.title : session.level.id;
         final String levelLabel =
@@ -112,7 +133,9 @@ class _GameScreenState extends State<GameScreen> {
                     movesUsed: session.movesUsed,
                     reducedMotion: reducedMotion,
                     onBack: () => _handleExitToLevels(context),
-                    onShare: () {},
+                    onShare: () {
+                      _handleShare(session);
+                    },
                     onHints: () {},
                     onNext: state.showResults ? () => _handleNextLevel(context) : null,
                   ),
@@ -153,6 +176,26 @@ class _GameScreenState extends State<GameScreen> {
                                             ),
                                           ),
                                         ),
+                                        Positioned.fill(
+                                          child: IgnorePointer(
+                                            ignoring: !_showResultsDialog,
+                                            child: _WinOverlay(
+                                              visible: _showResultsOverlay,
+                                              showDialog: _showResultsDialog,
+                                              movesCount: session.movesUsed,
+                                              bestScore: null,
+                                              worldAverage: null,
+                                              onContinue: _handleContinueResults,
+                                              onViewPuzzle: _handleViewPuzzle,
+                                              onRetry: () =>
+                                                  _handleRetry(context, notifier),
+                                              onShare: () {
+                                                _handleShare(session);
+                                              },
+                                              reducedMotion: reducedMotion,
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -168,23 +211,58 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ],
               ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  ignoring: !state.showResults,
-                  child: _WinOverlay(
-                    visible: state.showResults,
-                    board: session.board,
-                    hasNextLevel: notifier.nextLevelId() != null,
-                    onNextLevel: () => _handleNextLevel(context),
-                    onReturnToMenu: () => _handleReturnToMenu(context),
-                    reducedMotion: reducedMotion,
-                  ),
-                ),
-              ),
             ],
           ),
         );
       },
+    );
+  }
+
+  void _handleContinueResults() {
+    if (!_showResultsDialog) {
+      return;
+    }
+    setState(() {
+      _showResultsDialog = false;
+    });
+  }
+
+  void _handleViewPuzzle() {
+    if (!_showResultsOverlay && !_showResultsDialog) {
+      return;
+    }
+    setState(() {
+      _showResultsDialog = false;
+      _showResultsOverlay = false;
+    });
+  }
+
+  Future<void> _handleRetry(
+    BuildContext context,
+    GameNotifier notifier,
+  ) async {
+    final GameSession? session = notifier.state.session;
+    if (session == null) {
+      return;
+    }
+    setState(() {
+      _requestedSession = true;
+      _showResultsDialog = false;
+      _showResultsOverlay = false;
+      _wasShowingResults = false;
+    });
+    _boardController.clearSelection();
+    await notifier.startLevel(session.level.id);
+  }
+
+  Future<void> _handleShare(GameSession session) async {
+    final String levelValue =
+        session.level.title.isNotEmpty ? session.level.title : session.level.id;
+    final String message =
+        'I just solved "$levelValue" in ${session.movesUsed} moves in Color Puzzle Relax!';
+    await Share.share(
+      message,
+      subject: 'Color Puzzle Relax',
     );
   }
 
@@ -373,18 +451,26 @@ class _GameHud extends StatelessWidget {
 class _WinOverlay extends StatelessWidget {
   const _WinOverlay({
     required this.visible,
-    required this.board,
-    required this.hasNextLevel,
-    required this.onNextLevel,
-    required this.onReturnToMenu,
+    required this.showDialog,
+    required this.movesCount,
+    required this.bestScore,
+    required this.worldAverage,
+    required this.onContinue,
+    required this.onViewPuzzle,
+    required this.onRetry,
+    required this.onShare,
     required this.reducedMotion,
   });
 
   final bool visible;
-  final Board board;
-  final bool hasNextLevel;
-  final VoidCallback onNextLevel;
-  final VoidCallback onReturnToMenu;
+  final bool showDialog;
+  final int movesCount;
+  final int? bestScore;
+  final int? worldAverage;
+  final VoidCallback onContinue;
+  final VoidCallback onViewPuzzle;
+  final VoidCallback onRetry;
+  final VoidCallback onShare;
   final bool reducedMotion;
 
   @override
@@ -398,162 +484,33 @@ class _WinOverlay extends StatelessWidget {
       opacity: visible ? 1 : 0,
       duration: duration,
       curve: Curves.easeOutCubic,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'LEVEL COMPLETED!',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    if (!hasNextLevel)
-                      _OverlayActionButton(
-                        label: 'MENU',
-                        onPressed: visible ? onReturnToMenu : null,
-                        variant: _OverlayActionVariant.primary,
-                      ),
-                    if (hasNextLevel)
-                      _OverlayActionButton(
-                        label: 'MENU',
-                        onPressed: visible ? onReturnToMenu : null,
-                        variant: _OverlayActionVariant.outlined,
-                      ),
-                    if (hasNextLevel) const SizedBox(width: 12),
-                    if (hasNextLevel)
-                      _OverlayActionButton(
-                        label: 'NEXT',
-                        onPressed: visible ? onNextLevel : null,
-                        variant: _OverlayActionVariant.primary,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (BuildContext context, BoxConstraints constraints) {
-                      final double boardSize =
-                          min(constraints.maxHeight, constraints.maxWidth);
-                      return Center(
-                        child: SizedBox(
-                          width: boardSize,
-                          height: boardSize,
-                          child: _SolvedBoardPoster(board: board),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: AnimatedContainer(
+          duration: duration,
+          curve: Curves.easeOutCubic,
+          color: visible
+              ? theme.colorScheme.scrim
+                  .withOpacity(showDialog ? 0.45 : 0.2)
+              : Colors.transparent,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: GameResultsDialog(
+                visible: showDialog,
+                movesCount: movesCount,
+                bestScore: bestScore,
+                worldAverage: worldAverage,
+                onContinue: onContinue,
+                onViewPuzzle: onViewPuzzle,
+                onRetry: onRetry,
+                onShare: onShare,
+                reducedMotion: reducedMotion,
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _SolvedBoardPoster extends StatelessWidget {
-  const _SolvedBoardPoster({required this.board});
-
-  final Board board;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int gridSize = board.size;
-        final double extent = min(constraints.maxWidth, constraints.maxHeight);
-        final double tileSize = extent / gridSize;
-
-        return RepaintBoundary(
-          child: ClipRect(
-            child: Stack(
-              fit: StackFit.expand,
-              children: board.tiles.map((Tile tile) {
-                final int row = tile.correctIndex ~/ gridSize;
-                final int column = tile.correctIndex % gridSize;
-                final double left = column * tileSize;
-                final double top = row * tileSize;
-                final double width =
-                    column == gridSize - 1 ? extent - left : tileSize;
-                final double height =
-                    row == gridSize - 1 ? extent - top : tileSize;
-                return Positioned(
-                  left: left,
-                  top: top,
-                  width: width,
-                  height: height,
-                  child: ColoredBox(color: tile.color),
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-enum _OverlayActionVariant { primary, outlined }
-
-class _OverlayActionButton extends StatelessWidget {
-  const _OverlayActionButton({
-    required this.label,
-    required this.onPressed,
-    required this.variant,
-  });
-
-  final String label;
-  final VoidCallback? onPressed;
-  final _OverlayActionVariant variant;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    late final ButtonStyle baseStyle;
-    switch (variant) {
-      case _OverlayActionVariant.primary:
-        baseStyle = FilledButton.styleFrom(
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: theme.colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        );
-        break;
-      case _OverlayActionVariant.outlined:
-        baseStyle = OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        );
-        break;
-    }
-
-    switch (variant) {
-      case _OverlayActionVariant.primary:
-        return FilledButton(
-          style: baseStyle,
-          onPressed: onPressed,
-          child: Text(label),
-        );
-      case _OverlayActionVariant.outlined:
-        return OutlinedButton(
-          style: baseStyle,
-          onPressed: onPressed,
-          child: Text(label),
-        );
-    }
   }
 }
