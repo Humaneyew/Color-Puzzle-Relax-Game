@@ -8,14 +8,7 @@ class LevelModel extends Level {
     required super.difficulty,
     required super.boardSize,
     required super.isUnlocked,
-    this.bestScore,
-    required this.worldAverage,
-    required this.hintsRemaining,
   });
-
-  final int? bestScore;
-  final int worldAverage;
-  final int hintsRemaining;
 
   factory LevelModel.fromJson(Map<String, dynamic> json) {
     return LevelModel(
@@ -25,9 +18,6 @@ class LevelModel extends Level {
       difficulty: json['difficulty'] as int,
       boardSize: json['boardSize'] as int,
       isUnlocked: json['isUnlocked'] as bool,
-      bestScore: json['bestScore'] as int?,
-      worldAverage: json['worldAverage'] as int,
-      hintsRemaining: json['hintsRemaining'] as int,
     );
   }
 
@@ -39,9 +29,6 @@ class LevelModel extends Level {
       'difficulty': difficulty,
       'boardSize': boardSize,
       'isUnlocked': isUnlocked,
-      'bestScore': bestScore,
-      'worldAverage': worldAverage,
-      'hintsRemaining': hintsRemaining,
     };
   }
 
@@ -52,9 +39,6 @@ class LevelModel extends Level {
     int? difficulty,
     int? boardSize,
     bool? isUnlocked,
-    int? bestScore,
-    int? worldAverage,
-    int? hintsRemaining,
   }) {
     return LevelModel(
       id: id ?? this.id,
@@ -63,9 +47,6 @@ class LevelModel extends Level {
       difficulty: difficulty ?? this.difficulty,
       boardSize: boardSize ?? this.boardSize,
       isUnlocked: isUnlocked ?? this.isUnlocked,
-      bestScore: bestScore ?? this.bestScore,
-      worldAverage: worldAverage ?? this.worldAverage,
-      hintsRemaining: hintsRemaining ?? this.hintsRemaining,
     );
   }
 }
