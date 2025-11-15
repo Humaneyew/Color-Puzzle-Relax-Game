@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -106,41 +104,33 @@ class _GameScreenState extends State<GameScreen> {
                       Flexible(
                         child: LayoutBuilder(
                           builder: (BuildContext context, BoxConstraints constraints) {
-                            final double boardSize =
-                                min(constraints.maxWidth, constraints.maxHeight);
-
-                            return Align(
-                              alignment: Alignment.topCenter,
-                              child: SizedBox(
-                                width: boardSize,
-                                height: boardSize,
-                                child: Stack(
-                                  children: <Widget>[
-                                    BoardGrid(
-                                      board: session.board,
-                                      controller: _boardController,
-                                      disableInteractions: state.showResults,
-                                    ),
-                                    Positioned.fill(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(6),
-                                        child: VictoryWave(
-                                          active: state.showVictoryWave,
-                                          borderRadius: BorderRadius.circular(28),
-                                          reducedMotion: reducedMotion,
-                                          onCompleted: notifier.dismissVictoryWave,
-                                        ),
+                            return SizedBox.expand(
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: <Widget>[
+                                  BoardGrid(
+                                    board: session.board,
+                                    controller: _boardController,
+                                    disableInteractions: state.showResults,
+                                  ),
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: VictoryWave(
+                                        active: state.showVictoryWave,
+                                        borderRadius: BorderRadius.circular(28),
+                                        reducedMotion: reducedMotion,
+                                        onCompleted: notifier.dismissVictoryWave,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             );
                           },
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const SizedBox(height: 96),
                     ],
                   ),
                 ),
