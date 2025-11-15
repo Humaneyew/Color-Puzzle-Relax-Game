@@ -9,7 +9,8 @@ import 'level.dart';
 
 class LevelConfig extends Equatable {
   const LevelConfig({
-    required this.size,
+    required this.width,
+    required this.height,
     required this.topLeft,
     required this.topRight,
     required this.bottomLeft,
@@ -20,7 +21,8 @@ class LevelConfig extends Equatable {
     this.randomSeed,
   });
 
-  final int size;
+  final int width;
+  final int height;
   final Color topLeft;
   final Color topRight;
   final Color bottomLeft;
@@ -34,10 +36,12 @@ class LevelConfig extends Equatable {
     Level level, {
     ColorBlindnessType colorBlindness = ColorBlindnessType.none,
   }) {
+    assert(level.width > 0 && level.height > 0, 'Level dimensions must be positive');
     final int seed = level.id.hashCode;
     final Random random = Random(seed);
-    final int size = level.boardSize;
-    final int totalTiles = size * size;
+    final int width = level.width;
+    final int height = level.height;
+    final int totalTiles = width * height;
 
     final double baseHue = random.nextDouble() * 360;
     final double hueOffset = 360 / 4;
@@ -51,15 +55,17 @@ class LevelConfig extends Equatable {
 
     final Set<int> anchors = <int>{
       0,
-      size - 1,
-      totalTiles - size,
+      width - 1,
+      totalTiles - width,
       totalTiles - 1,
     };
 
-    final int misplacedThreshold = size <= 1 ? 0 : max(1, (totalTiles * 0.25).round());
+    final int misplacedThreshold =
+        totalTiles <= 1 ? 0 : max(1, (totalTiles * 0.25).round());
 
     return LevelConfig(
-      size: size,
+      width: width,
+      height: height,
       topLeft: buildColor(0),
       topRight: buildColor(1),
       bottomLeft: buildColor(2),
@@ -72,7 +78,8 @@ class LevelConfig extends Equatable {
   }
 
   LevelConfig copyWith({
-    int? size,
+    int? width,
+    int? height,
     Color? topLeft,
     Color? topRight,
     Color? bottomLeft,
@@ -83,7 +90,8 @@ class LevelConfig extends Equatable {
     int? randomSeed,
   }) {
     return LevelConfig(
-      size: size ?? this.size,
+      width: width ?? this.width,
+      height: height ?? this.height,
       topLeft: topLeft ?? this.topLeft,
       topRight: topRight ?? this.topRight,
       bottomLeft: bottomLeft ?? this.bottomLeft,
@@ -97,7 +105,8 @@ class LevelConfig extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        size,
+        width,
+        height,
         topLeft,
         topRight,
         bottomLeft,
