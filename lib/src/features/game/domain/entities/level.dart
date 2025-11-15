@@ -6,15 +6,18 @@ class Level extends Equatable {
     required this.title,
     required this.description,
     required this.difficulty,
-    required this.boardSize,
+    required this.width,
+    required this.height,
     required this.isUnlocked,
-  });
+  }) : assert(width > 0, 'Level width must be positive'),
+        assert(height > 0, 'Level height must be positive');
 
   final String id;
   final String title;
   final String description;
   final int difficulty;
-  final int boardSize;
+  final int width;
+  final int height;
   final bool isUnlocked;
 
   Level copyWith({
@@ -22,7 +25,8 @@ class Level extends Equatable {
     String? title,
     String? description,
     int? difficulty,
-    int? boardSize,
+    int? width,
+    int? height,
     bool? isUnlocked,
   }) {
     return Level(
@@ -30,7 +34,8 @@ class Level extends Equatable {
       title: title ?? this.title,
       description: description ?? this.description,
       difficulty: difficulty ?? this.difficulty,
-      boardSize: boardSize ?? this.boardSize,
+      width: width ?? this.width,
+      height: height ?? this.height,
       isUnlocked: isUnlocked ?? this.isUnlocked,
     );
   }
@@ -41,7 +46,8 @@ class Level extends Equatable {
         title,
         description,
         difficulty,
-        boardSize,
+        width,
+        height,
         isUnlocked,
       ];
 }

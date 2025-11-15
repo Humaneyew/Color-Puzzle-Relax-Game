@@ -31,7 +31,8 @@ List<LevelModel> _seedLevels() {
       title: 'Level $levelNumber',
       description: 'Relax and solve puzzle $levelNumber.',
       difficulty: 1 + (index ~/ 50),
-      boardSize: AppConstants.defaultBoardSize,
+      width: AppConstants.defaultBoardWidth,
+      height: AppConstants.defaultBoardHeight,
       isUnlocked: levelNumber == 1,
     );
   });
