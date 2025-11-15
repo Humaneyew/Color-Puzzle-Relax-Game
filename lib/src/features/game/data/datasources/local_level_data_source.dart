@@ -33,6 +33,9 @@ List<LevelModel> _seedLevels() {
       difficulty: 1 + (index ~/ 50),
       boardSize: AppConstants.defaultBoardSize,
       isUnlocked: levelNumber == 1,
+      bestScore: null,
+      worldAverage: 20 + (index % 10) + (index ~/ 50) * 5,
+      hintsRemaining: 3,
     );
   });
 }

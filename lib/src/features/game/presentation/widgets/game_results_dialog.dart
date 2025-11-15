@@ -10,7 +10,7 @@ class GameResultsDialog extends StatefulWidget {
     required this.onContinue,
     required this.onViewPuzzle,
     required this.onRetry,
-    required this.onShare,
+    this.onShare,
     required this.reducedMotion,
   });
 
@@ -21,7 +21,7 @@ class GameResultsDialog extends StatefulWidget {
   final VoidCallback onContinue;
   final VoidCallback onViewPuzzle;
   final VoidCallback onRetry;
-  final VoidCallback onShare;
+  final VoidCallback? onShare;
   final bool reducedMotion;
 
   @override
@@ -117,7 +117,7 @@ class _DialogContent extends StatelessWidget {
     required this.onContinue,
     required this.onViewPuzzle,
     required this.onRetry,
-    required this.onShare,
+    this.onShare,
   });
 
   final int movesCount;
@@ -126,7 +126,7 @@ class _DialogContent extends StatelessWidget {
   final VoidCallback onContinue;
   final VoidCallback onViewPuzzle;
   final VoidCallback onRetry;
-  final VoidCallback onShare;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {

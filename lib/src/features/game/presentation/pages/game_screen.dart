@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../domain/entities/game_session.dart';
 import '../state/board_controller.dart';
@@ -123,6 +122,8 @@ class _GameScreenState extends State<GameScreen> {
         final String levelLabel =
             _showCompletionTitle ? 'LEVEL COMPLETED!' : 'LEVEL $levelValue';
 
+        final bool overlayActive = state.showResults || state.showVictoryWave;
+
         return Scaffold(
           body: Stack(
             children: <Widget>[
@@ -133,10 +134,24 @@ class _GameScreenState extends State<GameScreen> {
                     movesUsed: session.movesUsed,
                     reducedMotion: reducedMotion,
                     onBack: () => _handleExitToLevels(context),
+                    bestScore: state.bestScore ?? session.bestScore,
+                    worldAverage: state.worldAverage ?? session.worldAverage,
+                    hintsRemaining: state.hintsRemaining,
                     onShare: () {
-                      _handleShare(session);
+                      notifier.shareProgress();
                     },
-                    onHints: () {},
+                    onHints: () {
+                      notifier.provideHint();
+                    },
+                    isShareEnabled: !overlayActive &&
+                        state.status != GameStatus.loading &&
+                        !state.isSharing,
+                    isHintEnabled: state.hintsRemaining > 0 &&
+                        !overlayActive &&
+                        state.status != GameStatus.loading &&
+                        !state.isProvidingHint,
+                    isSharing: state.isSharing,
+                    isHinting: state.isProvidingHint,
                     onNext: state.showResults ? () => _handleNextLevel(context) : null,
                   ),
                   Expanded(
@@ -183,15 +198,23 @@ class _GameScreenState extends State<GameScreen> {
                                               visible: _showResultsOverlay,
                                               showDialog: _showResultsDialog,
                                               movesCount: session.movesUsed,
-                                              bestScore: null,
-                                              worldAverage: null,
+                                              bestScore: state.bestScore ??
+                                                  session.bestScore,
+                                              worldAverage: state.worldAverage ??
+                                                  session.worldAverage,
                                               onContinue: _handleContinueResults,
                                               onViewPuzzle: _handleViewPuzzle,
                                               onRetry: () =>
                                                   _handleRetry(context, notifier),
-                                              onShare: () {
-                                                _handleShare(session);
-                                              },
+                                              onShare: state.isSharing ||
+                                                      state.status ==
+                                                          GameStatus.loading
+                                                  ? null
+                                                  : () {
+                                                      notifier.shareProgress(
+                                                        allowDuringOverlay: true,
+                                                      );
+                                                    },
                                               reducedMotion: reducedMotion,
                                             ),
                                           ),
@@ -255,17 +278,6 @@ class _GameScreenState extends State<GameScreen> {
     await notifier.startLevel(session.level.id);
   }
 
-  Future<void> _handleShare(GameSession session) async {
-    final String levelValue =
-        session.level.title.isNotEmpty ? session.level.title : session.level.id;
-    final String message =
-        'I just solved "$levelValue" in ${session.movesUsed} moves in Color Puzzle Relax!';
-    await Share.share(
-      message,
-      subject: 'Color Puzzle Relax',
-    );
-  }
-
   Future<void> _handleNextLevel(BuildContext context) async {
     final GameNotifier notifier = context.read<GameNotifier>();
     final String? nextLevelId = notifier.nextLevelId();
@@ -312,19 +324,33 @@ class _GameHud extends StatelessWidget {
   const _GameHud({
     required this.levelLabel,
     required this.movesUsed,
+    required this.bestScore,
+    required this.worldAverage,
+    required this.hintsRemaining,
     required this.reducedMotion,
     required this.onBack,
     required this.onShare,
     required this.onHints,
+    required this.isShareEnabled,
+    required this.isHintEnabled,
+    required this.isSharing,
+    required this.isHinting,
     this.onNext,
   });
 
   final String levelLabel;
   final int movesUsed;
+  final int? bestScore;
+  final int? worldAverage;
+  final int hintsRemaining;
   final bool reducedMotion;
   final VoidCallback onBack;
   final VoidCallback onShare;
   final VoidCallback onHints;
+  final bool isShareEnabled;
+  final bool isHintEnabled;
+  final bool isSharing;
+  final bool isHinting;
   final VoidCallback? onNext;
 
   @override
@@ -335,8 +361,20 @@ class _GameHud extends StatelessWidget {
     final TextStyle? movesStyle = theme.textTheme.bodyMedium?.copyWith(
       letterSpacing: 0.8,
     );
+    final Color statColor =
+        (theme.textTheme.bodyMedium?.color ?? theme.colorScheme.onSurface)
+            .withOpacity(0.8);
+    final TextStyle statsStyle = (theme.textTheme.labelLarge ??
+            theme.textTheme.bodyMedium ??
+            const TextStyle())
+        .copyWith(
+      color: statColor,
+      letterSpacing: 0.4,
+    );
     final Duration animationDuration =
         reducedMotion ? Duration.zero : const Duration(milliseconds: 220);
+
+    String formatStat(int? value) => value == null ? '--' : '$value';
 
     return SafeArea(
       bottom: false,
@@ -393,6 +431,27 @@ class _GameHud extends StatelessWidget {
                       style: movesStyle,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  AnimatedSwitcher(
+                    duration: animationDuration,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      if (reducedMotion) {
+                        return child;
+                      }
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: Text(
+                      'BEST ${formatStat(bestScore)} · AVG ${formatStat(worldAverage)} · HINTS $hintsRemaining',
+                      key: ValueKey<String>(
+                        '${bestScore ?? '--'}-${worldAverage ?? '--'}-$hintsRemaining',
+                      ),
+                      style: statsStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -400,16 +459,38 @@ class _GameHud extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                IconButton(
-                  tooltip: 'Share',
-                  onPressed: onShare,
-                  icon: const Icon(Icons.share_outlined),
+                OutlinedButton.icon(
+                  onPressed: isShareEnabled ? onShare : null,
+                  icon: isSharing
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              theme.colorScheme.primary,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.share_outlined),
+                  label: const Text('Share'),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Hints',
-                  onPressed: onHints,
-                  icon: const Icon(Icons.lightbulb_outline),
+                FilledButton.tonalIcon(
+                  onPressed: isHintEnabled ? onHints : null,
+                  icon: isHinting
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.lightbulb_outline),
+                  label: Text('Hints $hintsRemaining'),
                 ),
                 AnimatedSwitcher(
                   duration: animationDuration,
@@ -458,7 +539,7 @@ class _WinOverlay extends StatelessWidget {
     required this.onContinue,
     required this.onViewPuzzle,
     required this.onRetry,
-    required this.onShare,
+    this.onShare,
     required this.reducedMotion,
   });
 
@@ -470,7 +551,7 @@ class _WinOverlay extends StatelessWidget {
   final VoidCallback onContinue;
   final VoidCallback onViewPuzzle;
   final VoidCallback onRetry;
-  final VoidCallback onShare;
+  final VoidCallback? onShare;
   final bool reducedMotion;
 
   @override
