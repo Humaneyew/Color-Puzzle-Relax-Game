@@ -29,3 +29,5 @@ flutter:
           weight: 500
         - asset: assets/fonts/SF-Pro-Display-Bold.otf
           weight: 700
+  assets:
+    - assets/data/puzzle_levels.json
