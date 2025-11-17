@@ -50,12 +50,10 @@ class _BoardGridState extends State<BoardGrid> {
             ? math.max(maxHeight, 0)
             : (hasFiniteWidth ? math.max(maxWidth * rows / columns, 0) : rows.toDouble());
 
-        final double tileExtent = math.min(
-          availableWidth / columns,
-          availableHeight / rows,
-        );
-        final double boardWidth = tileExtent * columns;
-        final double boardHeight = tileExtent * rows;
+        final double tileWidth = availableWidth / columns;
+        final double tileHeight = availableHeight / rows;
+        final double boardWidth = tileWidth * columns;
+        final double boardHeight = tileHeight * rows;
 
         return Align(
           child: SizedBox(
@@ -66,8 +64,8 @@ class _BoardGridState extends State<BoardGrid> {
                 return _AnimatedTile(
                   key: ValueKey<int>(tile.correctIndex),
                   tile: tile,
-                  tileWidth: tileExtent,
-                  tileHeight: tileExtent,
+                  tileWidth: tileWidth,
+                  tileHeight: tileHeight,
                   gridColumns: columns,
                   controller: widget.controller,
                   disableInteractions:
