@@ -298,27 +298,14 @@ class _WinOverlay extends StatelessWidget {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (BuildContext context, BoxConstraints constraints) {
-                      final int gridWidth = board.width;
-                      final int gridHeight = board.height;
-                      final double maxWidthPerTile = gridWidth > 0
-                          ? constraints.maxWidth / gridWidth
-                          : double.infinity;
-                      final double maxHeightPerTile = gridHeight > 0
-                          ? constraints.maxHeight / gridHeight
-                          : double.infinity;
-                      final double tileExtent = math.min(
-                        maxWidthPerTile,
-                        maxHeightPerTile,
+                      final double boardSize = math.min(
+                        constraints.maxHeight,
+                        constraints.maxWidth,
                       );
-                      final double clampedTileExtent = tileExtent.isFinite && tileExtent > 0
-                          ? tileExtent
-                          : 1.0;
-                      final double boardWidth = clampedTileExtent * gridWidth;
-                      final double boardHeight = clampedTileExtent * gridHeight;
                       return Center(
                         child: SizedBox(
-                          width: boardWidth,
-                          height: boardHeight,
+                          width: boardSize,
+                          height: boardSize,
                           child: _SolvedBoardPoster(board: board),
                         ),
                       );
@@ -343,56 +330,34 @@ class _SolvedBoardPoster extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final int gridWidth = board.width;
-        final int gridHeight = board.height;
-        final double maxWidthPerTile = gridWidth > 0
-            ? constraints.maxWidth / gridWidth
-            : double.infinity;
-        final double maxHeightPerTile = gridHeight > 0
-            ? constraints.maxHeight / gridHeight
-            : double.infinity;
-        final double tileExtent = math.min(
-          maxWidthPerTile,
-          maxHeightPerTile,
+        final int gridSize = board.size;
+        final double extent = math.min(
+          constraints.maxWidth,
+          constraints.maxHeight,
         );
-        final double clampedTileExtent = tileExtent.isFinite && tileExtent > 0
-            ? tileExtent
-            : 1.0;
-        final double boardWidth = clampedTileExtent * gridWidth;
-        final double boardHeight = clampedTileExtent * gridHeight;
+        final double tileSize = extent / gridSize;
 
         return RepaintBoundary(
           child: ClipRect(
-            child: SizedBox(
-              width: boardWidth,
-              height: boardHeight,
-              child: Stack(
-                children: board.tiles.map((Tile tile) {
-                  final int row = gridWidth == 0
-                      ? 0
-                      : tile.correctIndex ~/ gridWidth;
-                  final int column = gridWidth == 0
-                      ? 0
-                      : tile.correctIndex % gridWidth;
-                  final double left = column * clampedTileExtent;
-                  final double top = row * clampedTileExtent;
-                  final bool isLastColumn = column == gridWidth - 1;
-                  final bool isLastRow = row == gridHeight - 1;
-                  final double width = isLastColumn
-                      ? math.max(boardWidth - left, 0)
-                      : clampedTileExtent;
-                  final double height = isLastRow
-                      ? math.max(boardHeight - top, 0)
-                      : clampedTileExtent;
-                  return Positioned(
-                    left: left,
-                    top: top,
-                    width: width,
-                    height: height,
-                    child: ColoredBox(color: tile.color),
-                  );
-                }).toList(),
-              ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: board.tiles.map((Tile tile) {
+                final int row = tile.correctIndex ~/ gridSize;
+                final int column = tile.correctIndex % gridSize;
+                final double left = column * tileSize;
+                final double top = row * tileSize;
+                final double width =
+                    column == gridSize - 1 ? extent - left : tileSize;
+                final double height =
+                    row == gridSize - 1 ? extent - top : tileSize;
+                return Positioned(
+                  left: left,
+                  top: top,
+                  width: width,
+                  height: height,
+                  child: ColoredBox(color: tile.color),
+                );
+              }).toList(),
             ),
           ),
         );

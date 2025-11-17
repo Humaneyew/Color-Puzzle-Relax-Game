@@ -15,11 +15,7 @@ class BoardGenerator {
   Board buildBoard(LevelConfig config, {Random? random}) {
     final Random rng = random ?? Random(config.randomSeed);
     final List<Tile> initialTiles = _buildTiles(config);
-    Board board = Board(
-      width: config.width,
-      height: config.height,
-      tiles: initialTiles,
-    );
+    Board board = Board(size: config.size, tiles: initialTiles);
     board = applyAnchors(board, config.anchorIndices);
     return shuffleMovables(
       board,
@@ -103,8 +99,8 @@ class BoardGenerator {
       topRight,
       bottomLeft,
       bottomRight,
-      config.width,
-      config.height,
+      config.size,
+      config.size,
     );
 
     final List<Tile> tiles = <Tile>[];

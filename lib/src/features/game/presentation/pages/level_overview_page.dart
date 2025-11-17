@@ -89,7 +89,7 @@ class _SessionSummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Board size: ${session.board.width} × ${session.board.height}'),
+            Text('Board size: ${session.board.size}'),
             const SizedBox(height: 8),
             Text('Moves used: ${session.movesUsed}'),
           ],

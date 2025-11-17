@@ -14,8 +14,7 @@ void main() {
 
   LevelConfig createConfig() {
     return LevelConfig(
-      width: 3,
-      height: 3,
+      size: 3,
       topLeft: const Color(0xFF0000FF),
       topRight: const Color(0xFFFF0000),
       bottomLeft: const Color(0xFF00FF00),
@@ -31,36 +30,10 @@ void main() {
     final LevelConfig config = createConfig();
     final Board board = generator.buildBoard(config, random: Random(5));
 
-    expect(board.width, config.width);
-    expect(board.height, config.height);
-    expect(board.tiles, hasLength(config.width * config.height));
+    expect(board.size, config.size);
+    expect(board.tiles, hasLength(config.size * config.size));
     expect(board.anchors, hasLength(config.anchorIndices.length));
     expect(board.movables.length + board.anchors.length, board.tiles.length);
-    expect(board.countMisplacedTiles(), greaterThanOrEqualTo(config.misplacedThreshold));
-  });
-
-  test('buildBoard handles rectangular dimensions', () {
-    final LevelConfig config = LevelConfig(
-      width: 4,
-      height: 2,
-      topLeft: const Color(0xFF101010),
-      topRight: const Color(0xFF202020),
-      bottomLeft: const Color(0xFF303030),
-      bottomRight: const Color(0xFF404040),
-      anchorIndices: <int>{0, 3, 4, 7},
-      misplacedThreshold: 1,
-      colorBlindness: ColorBlindnessType.none,
-      randomSeed: 11,
-    );
-
-    final Board board = generator.buildBoard(config, random: Random(3));
-
-    expect(board.width, 4);
-    expect(board.height, 2);
-    expect(board.tiles, hasLength(8));
-    for (final int index in config.anchorIndices) {
-      expect(board.tileAt(index).isAnchor, isTrue);
-    }
     expect(board.countMisplacedTiles(), greaterThanOrEqualTo(config.misplacedThreshold));
   });
 
@@ -73,7 +46,7 @@ void main() {
         color: const Color(0xFF123456),
       ),
     );
-    final Board board = Board(width: 2, height: 2, tiles: tiles);
+    final Board board = Board(size: 2, tiles: tiles);
     final Board anchored = generator.applyAnchors(board, <int>{0, 3});
 
     expect(anchored.tileAt(0).isAnchor, isTrue);
@@ -91,7 +64,7 @@ void main() {
         color: const Color(0xFF112233),
       ),
     );
-    Board board = Board(width: 3, height: 3, tiles: tiles);
+    Board board = Board(size: 3, tiles: tiles);
     board = generator.applyAnchors(board, <int>{0, 2, 6, 8});
 
     final Board shuffled = generator.shuffleMovables(
@@ -115,7 +88,7 @@ void main() {
         color: const Color(0xFF010101),
       ),
     );
-    final Board solved = Board(width: 2, height: 2, tiles: solvedTiles);
+    final Board solved = Board(size: 2, tiles: solvedTiles);
     expect(solved.isSolved(), isTrue);
 
     final List<Tile> unsolvedTiles = <Tile>[
@@ -140,7 +113,7 @@ void main() {
         color: Color(0xFF222222),
       ),
     ];
-    final Board unsolved = Board(width: 2, height: 2, tiles: unsolvedTiles);
+    final Board unsolved = Board(size: 2, tiles: unsolvedTiles);
     expect(unsolved.isSolved(), isFalse);
   });
 }
