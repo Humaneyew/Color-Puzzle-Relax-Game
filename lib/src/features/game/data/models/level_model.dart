@@ -1,3 +1,4 @@
+import '../../../../core/constants/app_constants.dart';
 import '../../domain/entities/level.dart';
 
 class LevelModel extends Level {
@@ -6,17 +7,23 @@ class LevelModel extends Level {
     required super.title,
     required super.description,
     required super.difficulty,
-    required super.boardSize,
+    required super.boardColumns,
+    required super.boardRows,
     required super.isUnlocked,
   });
 
   factory LevelModel.fromJson(Map<String, dynamic> json) {
+    final int? legacySize = json['boardSize'] as int?;
+    final int columns =
+        json['boardColumns'] as int? ?? legacySize ?? AppConstants.defaultBoardColumns;
+    final int rows = json['boardRows'] as int? ?? legacySize ?? AppConstants.defaultBoardRows;
     return LevelModel(
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
       difficulty: json['difficulty'] as int,
-      boardSize: json['boardSize'] as int,
+      boardColumns: columns,
+      boardRows: rows,
       isUnlocked: json['isUnlocked'] as bool,
     );
   }
@@ -27,7 +34,8 @@ class LevelModel extends Level {
       'title': title,
       'description': description,
       'difficulty': difficulty,
-      'boardSize': boardSize,
+      'boardColumns': boardColumns,
+      'boardRows': boardRows,
       'isUnlocked': isUnlocked,
     };
   }
@@ -37,7 +45,8 @@ class LevelModel extends Level {
     String? title,
     String? description,
     int? difficulty,
-    int? boardSize,
+    int? boardColumns,
+    int? boardRows,
     bool? isUnlocked,
   }) {
     return LevelModel(
@@ -45,7 +54,8 @@ class LevelModel extends Level {
       title: title ?? this.title,
       description: description ?? this.description,
       difficulty: difficulty ?? this.difficulty,
-      boardSize: boardSize ?? this.boardSize,
+      boardColumns: boardColumns ?? this.boardColumns,
+      boardRows: boardRows ?? this.boardRows,
       isUnlocked: isUnlocked ?? this.isUnlocked,
     );
   }

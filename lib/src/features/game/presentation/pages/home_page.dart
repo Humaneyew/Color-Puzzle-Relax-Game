@@ -96,7 +96,7 @@ class _LevelGrid extends StatelessWidget {
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: AppConstants.defaultBoardSize,
+        crossAxisCount: AppConstants.defaultBoardColumns,
         mainAxisSpacing: 4,
         crossAxisSpacing: 4,
         childAspectRatio: 1,
