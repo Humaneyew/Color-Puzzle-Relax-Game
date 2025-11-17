@@ -4,11 +4,16 @@ import 'tile.dart';
 
 class Board extends Equatable {
   Board({
-    required this.size,
+    required this.columns,
+    required this.rows,
     required List<Tile> tiles,
-  }) : tiles = List<Tile>.unmodifiable(_sortByCurrentIndex(tiles));
+  })  : assert(columns > 0 && rows > 0),
+        assert(columns * rows == tiles.length,
+            'Tile count must match board dimensions'),
+        tiles = List<Tile>.unmodifiable(_sortByCurrentIndex(tiles));
 
-  final int size;
+  final int columns;
+  final int rows;
   final List<Tile> tiles;
 
   Tile tileAt(int index) => tiles[index];
@@ -29,13 +34,14 @@ class Board extends Equatable {
 
   Board copyWith({List<Tile>? tiles}) {
     return Board(
-      size: size,
+      columns: columns,
+      rows: rows,
       tiles: tiles ?? this.tiles,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[size, tiles];
+  List<Object?> get props => <Object?>[columns, rows, tiles];
 }
 
 List<Tile> _sortByCurrentIndex(List<Tile> tiles) {

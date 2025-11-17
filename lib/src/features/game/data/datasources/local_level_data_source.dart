@@ -26,12 +26,14 @@ List<LevelModel> _seedLevels() {
   const int totalLevels = 500;
   return List<LevelModel>.generate(totalLevels, (int index) {
     final int levelNumber = index + 1;
+    final bool isSecondLevel = levelNumber == 2;
     return LevelModel(
       id: 'level_$levelNumber',
       title: 'Level $levelNumber',
       description: 'Relax and solve puzzle $levelNumber.',
       difficulty: 1 + (index ~/ 50),
-      boardSize: AppConstants.defaultBoardSize,
+      boardColumns: AppConstants.defaultBoardColumns,
+      boardRows: isSecondLevel ? 7 : AppConstants.defaultBoardRows,
       isUnlocked: levelNumber == 1,
     );
   });

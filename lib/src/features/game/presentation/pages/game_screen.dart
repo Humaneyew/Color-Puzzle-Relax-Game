@@ -330,34 +330,48 @@ class _SolvedBoardPoster extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final int gridSize = board.size;
-        final double extent = math.min(
-          constraints.maxWidth,
-          constraints.maxHeight,
+        final int columns = board.columns;
+        final int rows = board.rows;
+        final double availableWidth = constraints.maxWidth.isFinite
+            ? math.max(constraints.maxWidth, 0)
+            : columns.toDouble();
+        final double availableHeight = constraints.maxHeight.isFinite
+            ? math.max(constraints.maxHeight, 0)
+            : rows.toDouble();
+        final double tileSize = math.min(
+          availableWidth / columns,
+          availableHeight / rows,
         );
-        final double tileSize = extent / gridSize;
+        final double boardWidth = tileSize * columns;
+        final double boardHeight = tileSize * rows;
 
-        return RepaintBoundary(
-          child: ClipRect(
-            child: Stack(
-              fit: StackFit.expand,
-              children: board.tiles.map((Tile tile) {
-                final int row = tile.correctIndex ~/ gridSize;
-                final int column = tile.correctIndex % gridSize;
-                final double left = column * tileSize;
-                final double top = row * tileSize;
-                final double width =
-                    column == gridSize - 1 ? extent - left : tileSize;
-                final double height =
-                    row == gridSize - 1 ? extent - top : tileSize;
-                return Positioned(
-                  left: left,
-                  top: top,
-                  width: width,
-                  height: height,
-                  child: ColoredBox(color: tile.color),
-                );
-              }).toList(),
+        return Align(
+          child: SizedBox(
+            width: boardWidth,
+            height: boardHeight,
+            child: RepaintBoundary(
+              child: ClipRect(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: board.tiles.map((Tile tile) {
+                    final int row = tile.correctIndex ~/ columns;
+                    final int column = tile.correctIndex % columns;
+                    final double left = column * tileSize;
+                    final double top = row * tileSize;
+                    final double width =
+                        column == columns - 1 ? boardWidth - left : tileSize;
+                    final double height =
+                        row == rows - 1 ? boardHeight - top : tileSize;
+                    return Positioned(
+                      left: left,
+                      top: top,
+                      width: width,
+                      height: height,
+                      child: ColoredBox(color: tile.color),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
         );
