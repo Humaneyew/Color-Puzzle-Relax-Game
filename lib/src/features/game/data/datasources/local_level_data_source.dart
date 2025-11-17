@@ -34,7 +34,8 @@ List<LevelModel> _seedLevels() {
       difficulty: 1 + (index ~/ 50),
       boardColumns: AppConstants.defaultBoardColumns,
       boardRows: isSecondLevel ? 7 : AppConstants.defaultBoardRows,
-      isUnlocked: levelNumber == 1,
+      // Unlock the first two levels so level 2 is always available for tests.
+      isUnlocked: levelNumber <= 2,
     );
   });
 }
