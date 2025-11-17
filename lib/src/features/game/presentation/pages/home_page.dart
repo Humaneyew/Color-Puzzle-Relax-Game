@@ -7,7 +7,7 @@ import '../../domain/entities/level.dart';
 import '../state/game_notifier.dart';
 import '../state/game_state.dart';
 import '../widgets/level_card.dart';
-import 'level_overview_page.dart';
+import 'game_screen.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -109,7 +109,7 @@ class _LevelGrid extends StatelessWidget {
           number: index + 1,
           onTap: level.isUnlocked
               ? () => context.push(
-                    LevelOverviewPage.routePath.replaceFirst(':levelId', level.id),
+                    GameScreen.pathFor(level.id),
                   )
               : null,
         );
