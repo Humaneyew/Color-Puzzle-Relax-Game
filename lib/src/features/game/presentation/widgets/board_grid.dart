@@ -62,7 +62,7 @@ class _BoardGridState extends State<BoardGrid> {
             child: Stack(
               children: widget.board.tiles.map((Tile tile) {
                 return _AnimatedTile(
-                  key: ValueKey<int>(tile.correctIndex),
+                  key: ValueKey<int>(tile.id),
                   tile: tile,
                   tileWidth: tileWidth,
                   tileHeight: tileHeight,

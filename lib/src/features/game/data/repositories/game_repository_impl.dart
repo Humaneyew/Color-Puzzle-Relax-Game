@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:ui';
 
 import '../../domain/entities/board.dart';
@@ -59,43 +58,55 @@ class GameRepositoryImpl implements GameRepository {
   }
 
   Board _buildBoardFromPuzzle(PuzzleLevelModel puzzle) {
-    final List<String> solution = puzzle.flattenSolution();
-    final List<String> start = puzzle.flattenStart();
-    if (solution.length != start.length) {
-      throw StateError('Puzzle ${puzzle.id} has mismatched tile counts.');
+    if (puzzle.solution.length != puzzle.rows ||
+        puzzle.start.length != puzzle.rows ||
+        puzzle.anchors.length != puzzle.rows) {
+      throw StateError('Puzzle ${puzzle.id} has inconsistent row counts.');
     }
 
-    final Map<String, Queue<int>> targetIndices = <String, Queue<int>>{};
-    for (int index = 0; index < solution.length; index++) {
-      targetIndices
-          .putIfAbsent(solution[index], () => ListQueue<int>())
-          .add(index);
+    void validateColumns<T>(List<List<T>> matrix) {
+      for (final List<T> row in matrix) {
+        if (row.length != puzzle.cols) {
+          throw StateError('Puzzle ${puzzle.id} has inconsistent column counts.');
+        }
+      }
     }
 
-    final Set<int> anchors = puzzle.anchorIndices;
+    validateColumns<String>(puzzle.solution);
+    validateColumns<String>(puzzle.start);
+    validateColumns<bool>(puzzle.anchors);
+
     final List<Tile> tiles = <Tile>[];
-    for (int currentIndex = 0; currentIndex < start.length; currentIndex++) {
-      final String colorHex = start[currentIndex];
-      final Queue<int>? queue = targetIndices[colorHex];
-      if (queue == null || queue.isEmpty) {
-        throw StateError('Color $colorHex missing from solution for level ${puzzle.id}.');
+    final List<Color> solutionColors = <Color>[];
+    for (int r = 0; r < puzzle.rows; r++) {
+      for (int c = 0; c < puzzle.cols; c++) {
+        final int index = r * puzzle.cols + c;
+        final String solutionHex = puzzle.solution[r][c];
+        final String startHex = puzzle.start[r][c];
+        final bool isAnchor = puzzle.anchors[r][c];
+        if (isAnchor && startHex != solutionHex) {
+          throw StateError(
+            'Anchor at ($r, $c) in level ${puzzle.id} must match the solution.',
+          );
+        }
+        solutionColors.add(_colorFromHex(solutionHex));
+        tiles.add(
+          Tile(
+            id: index,
+            currentIndex: index,
+            color: _colorFromHex(startHex),
+            isAnchor: isAnchor,
+          ),
+        );
       }
-      final int correctIndex = queue.removeFirst();
-      final bool isAnchor = anchors.contains(correctIndex);
-      if (isAnchor && correctIndex != currentIndex) {
-        throw StateError('Anchor mismatch detected in level ${puzzle.id}.');
-      }
-      tiles.add(
-        Tile(
-          correctIndex: correctIndex,
-          currentIndex: currentIndex,
-          color: _colorFromHex(colorHex),
-          isAnchor: isAnchor,
-        ),
-      );
     }
 
-    return Board(columns: puzzle.cols, rows: puzzle.rows, tiles: tiles);
+    return Board(
+      columns: puzzle.cols,
+      rows: puzzle.rows,
+      tiles: tiles,
+      solutionColors: solutionColors,
+    );
   }
 
   Color _colorFromHex(String hex) {

@@ -4,27 +4,25 @@ import 'package:equatable/equatable.dart';
 
 class Tile extends Equatable {
   const Tile({
-    required this.correctIndex,
+    required this.id,
     required this.currentIndex,
     required this.color,
     this.isAnchor = false,
   });
 
-  final int correctIndex;
+  final int id;
   final int currentIndex;
   final Color color;
   final bool isAnchor;
 
-  bool get isInCorrectPosition => correctIndex == currentIndex;
-
   Tile copyWith({
-    int? correctIndex,
+    int? id,
     int? currentIndex,
     Color? color,
     bool? isAnchor,
   }) {
     return Tile(
-      correctIndex: correctIndex ?? this.correctIndex,
+      id: id ?? this.id,
       currentIndex: currentIndex ?? this.currentIndex,
       color: color ?? this.color,
       isAnchor: isAnchor ?? this.isAnchor,
@@ -32,5 +30,5 @@ class Tile extends Equatable {
   }
 
   @override
-  List<Object?> get props => <Object?>[correctIndex, currentIndex, color, isAnchor];
+  List<Object?> get props => <Object?>[id, currentIndex, color, isAnchor];
 }

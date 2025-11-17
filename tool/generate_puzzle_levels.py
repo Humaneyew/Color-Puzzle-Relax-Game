@@ -1,318 +1,211 @@
 import json
 import math
 import random
-import colorsys
 from pathlib import Path
+from typing import Iterable, List, Sequence, Tuple
 
-random.seed(8723)
+SEED = 20251117
+EASY_SIZES: Sequence[Tuple[int, int]] = ((3, 7), (5, 5), (4, 7))
+ADVANCED_SIZES: Sequence[Tuple[int, int]] = (
+    (7, 7),
+    (8, 8),
+    (7, 8),
+    (8, 7),
+    (9, 9),
+    (7, 9),
+    (9, 7),
+)
+ANCHOR_RATIO_RANGE = (0.15, 0.25)
+MAX_NOISE = 4.0
 
-EASY_SIZES = [(3, 7), (5, 5), (4, 7)]
-MEDIUM_SIZES = [(5, 7), (6, 6), (6, 7), (7, 6)]
-LARGE_SIZES = [(7, 7), (7, 8), (8, 8)]
-HARD_SIZES = [(7, 9), (8, 9), (9, 9)]
-
-PALETTE_BASES = [
-    "sunrise",
-    "mint",
-    "lavender",
-    "sorbet",
-    "canyon",
-    "aurora",
-    "ocean",
-    "orchid",
-    "sage",
-    "ember",
-    "glacier",
-    "copper",
-    "meadow",
-    "berry",
-]
-_palette_counts = {name: 0 for name in PALETTE_BASES}
+# D65 reference white
+REF_X = 95.047
+REF_Y = 100.0
+REF_Z = 108.883
 
 
-def next_palette_id(base):
-    if base not in _palette_counts:
-        _palette_counts[base] = 0
-    _palette_counts[base] += 1
-    return f"{base}_{_palette_counts[base]:02d}"
+def _hsl_to_rgb(h: float, s: float, l: float) -> Tuple[float, float, float]:
+    import colorsys
 
-
-def clamp(value, minimum=0.0, maximum=1.0):
-    return max(minimum, min(maximum, value))
-
-
-def mix_color(c1, c2, t):
-    return tuple(c1[i] + (c2[i] - c1[i]) * t for i in range(3))
-
-
-def rgb_to_hex(rgb):
-    r = int(round(clamp(rgb[0]) * 255))
-    g = int(round(clamp(rgb[1]) * 255))
-    b = int(round(clamp(rgb[2]) * 255))
-    return f"#{r:02X}{g:02X}{b:02X}"
-
-
-def hsl_to_rgb(h, s, l):
-    r, g, b = colorsys.hls_to_rgb((h % 360) / 360.0, clamp(l), clamp(s))
+    r, g, b = colorsys.hls_to_rgb((h % 360) / 360.0, l, s)
     return (r, g, b)
 
 
-def bilinear(c00, c01, c10, c11, u, v):
-    top = mix_color(c00, c01, u)
-    bottom = mix_color(c10, c11, u)
-    return mix_color(top, bottom, v)
+def _pivot_rgb(value: float) -> float:
+    if value <= 0.04045:
+        return value / 12.92
+    return ((value + 0.055) / 1.055) ** 2.4
 
 
-def generate_mono(rows, cols, rng):
-    hue = rng.uniform(0, 360)
-    saturation = rng.uniform(0.22, 0.42)
-    light_start = rng.uniform(0.55, 0.7)
-    light_end = min(0.9, light_start + rng.uniform(0.18, 0.28))
-    orientation = rng.choice(["horizontal", "vertical", "diagonal"])
-    grid = []
-    for r in range(rows):
-        row = []
-        for c in range(cols):
-            u = c / (cols - 1) if cols > 1 else 0
-            v = r / (rows - 1) if rows > 1 else 0
-            if orientation == "horizontal":
-                t = u
-            elif orientation == "vertical":
-                t = v
-            else:
-                t = (u + v) / 2
-            light = light_start + (light_end - light_start) * t
-            sat = clamp(saturation + (t - 0.5) * rng.uniform(-0.08, 0.08))
-            color = hsl_to_rgb(hue, sat, light)
-            row.append(color)
-        grid.append(row)
-    return grid
+def _rgb_to_xyz(rgb: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    r, g, b = (_pivot_rgb(component) * 100.0 for component in rgb)
+    r, g, b = r, g, b
+    x = r * 0.4124 + g * 0.3576 + b * 0.1805
+    y = r * 0.2126 + g * 0.7152 + b * 0.0722
+    z = r * 0.0193 + g * 0.1192 + b * 0.9505
+    return (x, y, z)
 
 
-def generate_dual(rows, cols, rng):
-    hue_a = rng.uniform(0, 360)
-    hue_b = (hue_a + rng.uniform(60, 140)) % 360
-    sat_a = rng.uniform(0.25, 0.45)
-    sat_b = clamp(sat_a + rng.uniform(-0.1, 0.1))
-    light_a = rng.uniform(0.6, 0.75)
-    light_b = clamp(light_a + rng.uniform(-0.05, 0.08))
-    orient = rng.choice(["horizontal", "diagonal"])
-    grid = []
-    for r in range(rows):
-        row = []
-        for c in range(cols):
-            u = c / (cols - 1) if cols > 1 else 0
-            v = r / (rows - 1) if rows > 1 else 0
-            t = (u + v) / 2 if orient == "diagonal" else u
-            color_a = hsl_to_rgb(hue_a, sat_a, light_a)
-            color_b = hsl_to_rgb(hue_b, sat_b, light_b)
-            mixed = mix_color(color_a, color_b, t)
-            vertical_shade = clamp(0.03 * (v - 0.5))
-            final = mix_color(mixed, (1.0, 1.0, 1.0), 0.05 + vertical_shade)
-            row.append(final)
-        grid.append(row)
-    return grid
+def _pivot_xyz(value: float) -> float:
+    if value > 0.008856:
+        return value ** (1 / 3)
+    return (7.787 * value) + (16 / 116)
 
 
-def generate_quad(rows, cols, rng):
-    base_hue = rng.uniform(0, 360)
-    offsets = [0, rng.uniform(30, 90), rng.uniform(90, 180), rng.uniform(180, 270)]
-    sat_values = [rng.uniform(0.25, 0.45) for _ in range(4)]
-    light_values = [rng.uniform(0.6, 0.82) for _ in range(4)]
-    corners = [
-        hsl_to_rgb(base_hue + offsets[0], sat_values[0], light_values[0]),
-        hsl_to_rgb(base_hue + offsets[1], sat_values[1], light_values[1]),
-        hsl_to_rgb(base_hue + offsets[2], sat_values[2], light_values[2]),
-        hsl_to_rgb(base_hue + offsets[3], sat_values[3], light_values[3]),
-    ]
-    grid = []
-    for r in range(rows):
-        row = []
-        for c in range(cols):
-            u = c / (cols - 1) if cols > 1 else 0
-            v = r / (rows - 1) if rows > 1 else 0
-            color = bilinear(corners[0], corners[1], corners[2], corners[3], u, v)
-            row.append(color)
-        grid.append(row)
-    return grid
+def _xyz_to_lab(xyz: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    x, y, z = xyz
+    x = _pivot_xyz(x / REF_X)
+    y = _pivot_xyz(y / REF_Y)
+    z = _pivot_xyz(z / REF_Z)
+    l = (116 * y) - 16
+    a = 500 * (x - y)
+    b = 200 * (y - z)
+    return (l, a, b)
 
 
-def generate_complex(rows, cols, rng):
-    base_grid = generate_quad(rows, cols, rng)
-    center_hue = rng.uniform(0, 360)
-    center_color = hsl_to_rgb(center_hue, rng.uniform(0.25, 0.5), rng.uniform(0.65, 0.85))
-    band_color = hsl_to_rgb((center_hue + rng.uniform(90, 150)) % 360, rng.uniform(0.25, 0.4), rng.uniform(0.6, 0.8))
-    grid = []
-    for r in range(rows):
-        row = []
-        for c in range(cols):
-            u = c / (cols - 1) if cols > 1 else 0
-            v = r / (rows - 1) if rows > 1 else 0
-            base = base_grid[r][c]
-            dist_center = math.sqrt((u - 0.5) ** 2 + (v - 0.5) ** 2)
-            center_weight = math.exp(-((dist_center) / 0.45) ** 2) * 0.35
-            band = math.cos((u - 0.5) * math.pi)
-            band_weight = max(0.0, band) * 0.2 + max(0.0, math.sin((v - 0.5) * math.pi)) * 0.1
-            with_center = mix_color(base, center_color, center_weight)
-            with_band = mix_color(with_center, band_color, band_weight)
-            softened = mix_color(with_band, (1.0, 1.0, 1.0), 0.08)
-            row.append(softened)
-        grid.append(row)
-    return grid
+def _rgb_to_lab(rgb: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    return _xyz_to_lab(_rgb_to_xyz(rgb))
 
 
-def choose_gradient(level_id):
-    if level_id <= 8:
-        return "mono"
-    if level_id <= 15:
-        return "mono" if level_id % 3 != 0 else "dual"
-    if level_id <= 24:
-        return "dual"
-    if level_id <= 32:
-        return "quad"
-    if level_id <= 40:
-        return "complex" if level_id % 2 == 0 else "quad"
-    return "complex"
+def _pivot_lab(value: float) -> float:
+    if value ** 3 > 0.008856:
+        return value ** 3
+    return (value - 16 / 116) / 7.787
 
 
-def size_for_level(level_id):
+def _lab_to_xyz(lab: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    l, a, b = lab
+    y = (l + 16) / 116
+    x = a / 500 + y
+    z = y - b / 200
+    x = REF_X * _pivot_lab(x)
+    y = REF_Y * _pivot_lab(y)
+    z = REF_Z * _pivot_lab(z)
+    return (x, y, z)
+
+
+def _xyz_to_rgb(xyz: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    x, y, z = (component / 100.0 for component in xyz)
+    r = x * 3.2406 + y * -1.5372 + z * -0.4986
+    g = x * -0.9689 + y * 1.8758 + z * 0.0415
+    b = x * 0.0557 + y * -0.2040 + z * 1.0570
+
+    def gamma_correct(value: float) -> float:
+        value = max(0.0, min(1.0, value))
+        if value <= 0.0031308:
+            return 12.92 * value
+        return 1.055 * (value ** (1 / 2.4)) - 0.055
+
+    return (gamma_correct(r), gamma_correct(g), gamma_correct(b))
+
+
+def _lab_to_rgb(lab: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    return _xyz_to_rgb(_lab_to_xyz(lab))
+
+
+def _lab_to_hex(lab: Tuple[float, float, float]) -> str:
+    r, g, b = _lab_to_rgb(lab)
+    r_i = max(0, min(255, int(round(r * 255))))
+    g_i = max(0, min(255, int(round(g * 255))))
+    b_i = max(0, min(255, int(round(b * 255))))
+    return f"#{r_i:02X}{g_i:02X}{b_i:02X}"
+
+
+def _bilinear(c00, c10, c01, c11, u, v):
+    def lerp(a, b, t):
+        return a + (b - a) * t
+
+    top = tuple(lerp(c00[i], c10[i], u) for i in range(3))
+    bottom = tuple(lerp(c01[i], c11[i], u) for i in range(3))
+    return tuple(lerp(top[i], bottom[i], v) for i in range(3))
+
+
+def _select_corner_palette(level_id: int, rng: random.Random) -> List[Tuple[float, float, float]]:
     if level_id <= 10:
-        sizes = EASY_SIZES
-    elif level_id <= 25:
-        sizes = MEDIUM_SIZES
-    elif level_id <= 40:
-        sizes = LARGE_SIZES
-    else:
-        sizes = HARD_SIZES
-    return sizes[(level_id - 1) % len(sizes)]
-
-
-def difficulty_for_level(level_id):
-    if level_id <= 10:
-        return "easy"
+        base_hue = rng.uniform(0, 360)
+        sat = rng.uniform(0.32, 0.48)
+        light = rng.uniform(0.55, 0.7)
+        offsets = [rng.uniform(-10, 10) for _ in range(4)]
+        lights = [light + rng.uniform(-0.1, 0.1) for _ in range(4)]
+        return [
+            _rgb_to_lab(_hsl_to_rgb(base_hue + offsets[i], sat, max(0.35, min(0.9, lights[i]))))
+            for i in range(4)
+        ]
     if level_id <= 30:
-        return "medium"
-    return "hard"
+        base = rng.uniform(0, 360)
+        companion = (base + rng.uniform(45, 120)) % 360
+        sat_a = rng.uniform(0.28, 0.5)
+        sat_b = rng.uniform(0.28, 0.5)
+        light_a = rng.uniform(0.55, 0.75)
+        light_b = rng.uniform(0.55, 0.8)
+        c00 = _rgb_to_lab(_hsl_to_rgb(base, sat_a, light_a))
+        c10 = _rgb_to_lab(_hsl_to_rgb(companion, sat_b, light_b))
+        c01 = _rgb_to_lab(_hsl_to_rgb(base + rng.uniform(-20, 20), sat_a, light_b))
+        c11 = _rgb_to_lab(_hsl_to_rgb(companion + rng.uniform(-15, 15), sat_b, light_a))
+        return [c00, c10, c01, c11]
+    hues = [rng.uniform(0, 360)]
+    while len(hues) < 4:
+        candidate = rng.uniform(0, 360)
+        if all(abs((candidate - h + 180) % 360 - 180) > 40 for h in hues):
+            hues.append(candidate)
+    sat_values = [rng.uniform(0.25, 0.55) for _ in range(4)]
+    light_values = [rng.uniform(0.5, 0.82) for _ in range(4)]
+    return [
+        _rgb_to_lab(_hsl_to_rgb(hues[i], sat_values[i], light_values[i])) for i in range(4)
+    ]
 
 
-PATTERNS = [
-    "perimeter",
-    "cross",
-    "vertical",
-    "horizontal",
-    "diagonal",
-    "staggered",
-    "inner_cross",
-    "clusters",
-    "offset_lines",
-]
+def _generate_solution(rows: int, cols: int, level_id: int, rng: random.Random) -> List[List[str]]:
+    corners = _select_corner_palette(level_id, rng)
+    grid: List[List[str]] = []
+    for r in range(rows):
+        row: List[str] = []
+        v = r / (rows - 1) if rows > 1 else 0
+        for c in range(cols):
+            u = c / (cols - 1) if cols > 1 else 0
+            lab = _bilinear(corners[0], corners[1], corners[2], corners[3], u, v)
+            noise_a = rng.uniform(-MAX_NOISE, MAX_NOISE)
+            noise_b = rng.uniform(-MAX_NOISE, MAX_NOISE)
+            lab = (lab[0], lab[1] + noise_a, lab[2] + noise_b)
+            row.append(_lab_to_hex(lab))
+        grid.append(row)
+    return grid
 
 
-def pattern_for_level(level_id):
-    if level_id <= 10:
-        return PATTERNS[level_id % 3]
-    if level_id <= 25:
-        return PATTERNS[(level_id + 1) % len(PATTERNS)]
-    if level_id <= 40:
-        return PATTERNS[(level_id + 3) % len(PATTERNS)]
-    return PATTERNS[(level_id + 5) % len(PATTERNS)]
+def _choose_size(level_id: int, rng: random.Random) -> Tuple[int, int]:
+    sizes = EASY_SIZES if level_id <= 10 else ADVANCED_SIZES
+    return rng.choice(list(sizes))
 
 
-def generate_anchor_mask(rows, cols, difficulty, pattern, rng):
-    total = rows * cols
-    if difficulty == "easy":
-        ratio = rng.uniform(0.32, 0.4)
-        min_required = 4
-    elif difficulty == "medium":
-        ratio = rng.uniform(0.22, 0.28)
-        min_required = 4
-    else:
-        ratio = rng.uniform(0.12, 0.2)
-        min_required = 2
-    target = min(total, max(min_required, round(total * ratio)))
-    if total - target < 5:
-        target = max(min_required, total - 5)
-    mask = [[False for _ in range(cols)] for _ in range(rows)]
-
-    def add_cell(r, c):
-        if 0 <= r < rows and 0 <= c < cols and not mask[r][c]:
-            mask[r][c] = True
-
-    corners = [(0, 0), (0, cols - 1), (rows - 1, 0), (rows - 1, cols - 1)]
-    if difficulty in ("easy", "medium"):
-        for r, c in corners:
-            add_cell(r, c)
-    else:
-        rng.shuffle(corners)
-        for r, c in corners[:2]:
-            add_cell(r, c)
-
-    def perimeter_positions():
+def _pattern_positions(rows: int, cols: int, pattern: str) -> Iterable[Tuple[int, int]]:
+    if pattern == "perimeter":
         for c in range(cols):
             yield (0, c)
             yield (rows - 1, c)
-        for r in range(rows):
+        for r in range(1, rows - 1):
             yield (r, 0)
             yield (r, cols - 1)
-
-    def cross_positions():
+    elif pattern == "cross":
         mid_r = rows // 2
         mid_c = cols // 2
         for c in range(cols):
             yield (mid_r, c)
         for r in range(rows):
             yield (r, mid_c)
-        for pos in corners:
-            yield pos
-
-    def vertical_positions():
-        mid_c = cols // 2
-        for r in range(rows):
-            yield (r, mid_c)
-        for offset in (-1, 1):
-            c = mid_c + offset
-            if 0 <= c < cols:
-                for r in range(rows):
-                    yield (r, c)
-
-    def horizontal_positions():
-        mid_r = rows // 2
-        for c in range(cols):
-            yield (mid_r, c)
-        for offset in (-1, 1):
-            r = mid_r + offset
-            if 0 <= r < rows:
-                for c in range(cols):
-                    yield (r, c)
-
-    def diagonal_positions():
-        for r in range(rows):
-            c = int(round((cols - 1) * (r / (rows - 1) if rows > 1 else 0)))
-            yield (r, c)
-            yield (r, cols - 1 - c)
-
-    def staggered_positions():
-        for r in range(rows):
-            start = r % 2
-            for c in range(start, cols, 2):
-                yield (r, c)
-
-    def inner_cross_positions():
+    elif pattern == "inner_cross":
         mid_r = rows // 2
         mid_c = cols // 2
-        offsets = [-1, 0, 1]
-        for dr in offsets:
+        for dr in (-1, 0, 1):
             r = mid_r + dr
             if 0 <= r < rows:
                 for c in range(cols):
                     yield (r, c)
-        for dc in offsets:
+        for dc in (-1, 0, 1):
             c = mid_c + dc
             if 0 <= c < cols:
                 for r in range(rows):
                     yield (r, c)
-
-    def cluster_positions():
+    elif pattern == "clusters":
         centers = [
             (rows // 3, cols // 3),
             (rows // 3, 2 * cols // 3),
@@ -322,112 +215,218 @@ def generate_anchor_mask(rows, cols, difficulty, pattern, rng):
         for cr, cc in centers:
             for dr in (-1, 0, 1):
                 for dc in (-1, 0, 1):
-                    yield (cr + dr, cc + dc)
+                    r = cr + dr
+                    c = cc + dc
+                    if 0 <= r < rows and 0 <= c < cols:
+                        yield (r, c)
+    else:
+        for r in range(rows):
+            yield (r, 0)
+            yield (r, cols - 1)
+            if r in (0, rows - 1):
+                for c in range(cols):
+                    yield (r, c)
 
-    def offset_lines_positions():
-        for r in range(0, rows, 2):
-            for c in range(cols):
-                yield (r, c)
-        for c in range(1, cols, 2):
-            for r in range(rows):
-                yield (r, c)
 
-    pattern_map = {
-        "perimeter": perimeter_positions,
-        "cross": cross_positions,
-        "vertical": vertical_positions,
-        "horizontal": horizontal_positions,
-        "diagonal": diagonal_positions,
-        "staggered": staggered_positions,
-        "inner_cross": inner_cross_positions,
-        "clusters": cluster_positions,
-        "offset_lines": offset_lines_positions,
-    }
+def _select_pattern(level_id: int, rng: random.Random) -> str:
+    if level_id <= 10:
+        return rng.choice(["perimeter", "cross"])
+    if level_id <= 25:
+        return rng.choice(["perimeter", "cross", "inner_cross", "clusters"])
+    return rng.choice(["perimeter", "inner_cross", "clusters"])
 
-    generator = pattern_map.get(pattern, perimeter_positions)
-    for pos in generator():
-        add_cell(*pos)
-        if sum(row.count(True) for row in mask) >= target:
-            return mask
 
-    attempts = 0
-    while sum(row.count(True) for row in mask) < target and attempts < total * 3:
-        attempts += 1
-        if rows > 2 and cols > 2:
-            r = rng.randint(1, rows - 2)
-            c = rng.randint(1, cols - 2)
+def _count_true(mask: List[List[bool]]) -> int:
+    return sum(1 for row in mask for cell in row if cell)
+
+
+def _ensure_row_col_movable(mask: List[List[bool]], rng: random.Random) -> None:
+    rows = len(mask)
+    cols = len(mask[0])
+    for r in range(rows):
+        if all(mask[r]):
+            c = rng.randrange(cols)
+            mask[r][c] = False
+    for c in range(cols):
+        if all(mask[r][c] for r in range(rows)):
+            r = rng.randrange(rows)
+            mask[r][c] = False
+
+
+def _generate_anchor_mask(rows: int, cols: int, level_id: int, rng: random.Random) -> List[List[bool]]:
+    total = rows * cols
+    min_anchors = max(2, int(math.floor(total * ANCHOR_RATIO_RANGE[0])))
+    max_anchors = max(min_anchors + 1, int(math.floor(total * ANCHOR_RATIO_RANGE[1])))
+    target = rng.randint(min_anchors, max_anchors)
+    mask = [[False for _ in range(cols)] for _ in range(rows)]
+
+    def set_anchor(r: int, c: int) -> None:
+        if 0 <= r < rows and 0 <= c < cols:
+            mask[r][c] = True
+
+    for corner in ((0, 0), (0, cols - 1), (rows - 1, 0), (rows - 1, cols - 1)):
+        set_anchor(*corner)
+
+    pattern = _select_pattern(level_id, rng)
+    for r, c in _pattern_positions(rows, cols, pattern):
+        set_anchor(r, c)
+        if _count_true(mask) >= target:
+            break
+
+    while _count_true(mask) < target:
+        if rng.random() < 0.6:
+            edge = rng.choice([
+                (0, rng.randrange(cols)),
+                (rows - 1, rng.randrange(cols)),
+                (rng.randrange(rows), 0),
+                (rng.randrange(rows), cols - 1),
+            ])
+            set_anchor(*edge)
         else:
             r = rng.randrange(rows)
             c = rng.randrange(cols)
-        add_cell(r, c)
+            set_anchor(r, c)
+
+    _ensure_row_col_movable(mask, rng)
+    while _count_true(mask) < min_anchors:
+        r = rng.randrange(rows)
+        c = rng.randrange(cols)
+        mask[r][c] = True
+        _ensure_row_col_movable(mask, rng)
+
+    while _count_true(mask) > max_anchors:
+        candidates = [(r, c) for r in range(rows) for c in range(cols) if mask[r][c]]
+        if not candidates:
+            break
+        r, c = rng.choice(candidates)
+        mask[r][c] = False
+        _ensure_row_col_movable(mask, rng)
+
+    while total - _count_true(mask) < 5:
+        # release random anchor to free movable space
+        candidates = [(r, c) for r in range(rows) for c in range(cols) if mask[r][c]]
+        if not candidates:
+            break
+        r, c = rng.choice(candidates)
+        mask[r][c] = False
+        _ensure_row_col_movable(mask, rng)
+
+    while _count_true(mask) < min_anchors:
+        r = rng.randrange(rows)
+        c = rng.randrange(cols)
+        mask[r][c] = True
+        _ensure_row_col_movable(mask, rng)
 
     return mask
 
 
-def generate_grid(rows, cols, gradient, rng):
-    if gradient == "mono":
-        return generate_mono(rows, cols, rng)
-    if gradient == "dual":
-        return generate_dual(rows, cols, rng)
-    if gradient == "quad":
-        return generate_quad(rows, cols, rng)
-    return generate_complex(rows, cols, rng)
+def _flatten(grid: List[List[str]]) -> List[str]:
+    return [color for row in grid for color in row]
 
 
-def reshape(flat, rows, cols):
-    return [flat[r * cols:(r + 1) * cols] for r in range(rows)]
+def _manhattan(a: int, b: int, cols: int) -> int:
+    return abs(a // cols - b // cols) + abs(a % cols - b % cols)
 
 
-def convert_grid_to_hex(grid):
-    return [[rgb_to_hex(color) for color in row] for row in grid]
+def _misplaced_count(start: List[str], solution: List[str]) -> int:
+    return sum(1 for idx, color in enumerate(start) if color != solution[idx])
 
 
-def shuffle_start(solution_flat, mask, rows, cols, level_id):
-    movable_indices = [idx for idx, is_fixed in enumerate(mask) if not is_fixed]
-    movable_colors = [solution_flat[idx] for idx in movable_indices]
-    rng = random.Random(level_id * 7919)
+def _build_start_easy(solution: List[str], anchors: List[bool], rows: int, cols: int, rng: random.Random) -> List[str]:
+    movable_indices = [idx for idx, is_anchor in enumerate(anchors) if not is_anchor]
+    neighborhood: dict[int, List[int]] = {}
+    for src in movable_indices:
+        allowed = [dst for dst in movable_indices if _manhattan(src, dst, cols) <= 3]
+        if src not in allowed:
+            allowed.append(src)
+        neighborhood[src] = allowed
+
     attempts = 0
-    while True:
+    while attempts < 800:
         attempts += 1
-        shuffled = movable_colors[:]
-        rng.shuffle(shuffled)
-        start_flat = list(solution_flat)
-        for idx, pos in enumerate(movable_indices):
-            start_flat[pos] = shuffled[idx]
-        misplaced = sum(1 for i, color in enumerate(start_flat) if color != solution_flat[i])
-        if misplaced >= 5:
-            return start_flat
-        if attempts > 50:
-            rng.shuffle(movable_indices)
+        available = set(movable_indices)
+        assignment: dict[int, int] = {}
+        for src in rng.sample(movable_indices, len(movable_indices)):
+            choices = [dst for dst in neighborhood[src] if dst in available]
+            if not choices:
+                break
+            dst = rng.choice(choices)
+            assignment[src] = dst
+            available.remove(dst)
+        if len(assignment) != len(movable_indices):
+            continue
+        start = solution[:]
+        for src, dst in assignment.items():
+            start[dst] = solution[src]
+        if _misplaced_count(start, solution) >= 5:
+            return start
+    raise RuntimeError('Unable to generate easy start state with required displacement.')
 
 
-def main():
-    rng = random.Random(8723)
+def _build_start_advanced(solution: List[str], anchors: List[bool], rows: int, cols: int, rng: random.Random) -> List[str]:
+    movable_indices = [idx for idx, is_anchor in enumerate(anchors) if not is_anchor]
+    def quadrant_of(pos: int) -> Tuple[int, int]:
+        row = pos // cols
+        col = pos % cols
+        quad_r = 0 if row < rows // 2 else 1
+        quad_c = 0 if col < cols // 2 else 1
+        return (quad_r, quad_c)
+
+    available_quadrants = {quadrant_of(pos) for pos in movable_indices}
+    attempts = 0
+    while attempts < 500:
+        attempts += 1
+        shuffled_colors = [solution[idx] for idx in movable_indices]
+        rng.shuffle(shuffled_colors)
+        start = solution[:]
+        for idx, dst in enumerate(movable_indices):
+            start[dst] = shuffled_colors[idx]
+        misplaced_positions = [idx for idx in movable_indices if start[idx] != solution[idx]]
+        if len(misplaced_positions) < 5:
+            continue
+        quadrants_hit = {quadrant_of(pos) for pos in misplaced_positions}
+        if quadrants_hit.issuperset(available_quadrants):
+            return start
+    raise RuntimeError('Unable to generate advanced start state satisfying constraints.')
+
+
+def _generate_start(solution: List[List[str]], anchors_matrix: List[List[bool]], level_id: int,
+                    rng: random.Random) -> List[List[str]]:
+    rows = len(solution)
+    cols = len(solution[0])
+    solution_flat = _flatten(solution)
+    anchors_flat = [cell for row in anchors_matrix for cell in row]
+    if level_id <= 10:
+        start_flat = _build_start_easy(solution_flat, anchors_flat, rows, cols, rng)
+    else:
+        start_flat = _build_start_advanced(solution_flat, anchors_flat, rows, cols, rng)
+    return [start_flat[r * cols:(r + 1) * cols] for r in range(rows)]
+
+
+def _generate_palette(solution: List[List[str]]) -> List[str]:
+    unique = sorted({color for row in solution for color in row})
+    return unique
+
+
+def main() -> None:
+    rng = random.Random(SEED)
     levels = []
     for level_id in range(1, 51):
-        rows, cols = size_for_level(level_id)
-        difficulty = difficulty_for_level(level_id)
-        gradient = choose_gradient(level_id)
-        pattern = pattern_for_level(level_id)
-        palette_base = rng.choice(PALETTE_BASES)
-        palette_id = next_palette_id(palette_base)
-        grid = generate_grid(rows, cols, gradient, rng)
-        solution_hex = convert_grid_to_hex(grid)
-        mask_matrix = generate_anchor_mask(rows, cols, difficulty, pattern, rng)
-        mask_flat = [cell for row in mask_matrix for cell in row]
-        solution_flat = [color for row in solution_hex for color in row]
-        start_flat = shuffle_start(solution_flat, mask_flat, rows, cols, level_id)
-        start_matrix = reshape(start_flat, rows, cols)
-        levels.append({
+        rows, cols = _choose_size(level_id, rng)
+        anchors = _generate_anchor_mask(rows, cols, level_id, rng)
+        solution = _generate_solution(rows, cols, level_id, rng)
+        start = _generate_start(solution, anchors, level_id, rng)
+        palette = _generate_palette(solution)
+        level = {
             "id": level_id,
             "rows": rows,
             "cols": cols,
-            "paletteId": palette_id,
-            "solution": solution_hex,
-            "fixedMask": mask_matrix,
-            "start": start_matrix,
-            "difficulty": difficulty,
-        })
+            "palette": palette,
+            "solution": solution,
+            "anchors": anchors,
+            "start": start,
+        }
+        levels.append(level)
 
     output = {"levels": levels}
     path = Path("assets/data")

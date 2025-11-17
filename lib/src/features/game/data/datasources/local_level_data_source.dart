@@ -64,8 +64,8 @@ class LocalLevelDataSource implements LevelDataSource {
         LevelModel(
           id: levelId,
           title: 'Level ${puzzle.id}',
-          description: 'Restore palette ${puzzle.paletteId}.',
-          difficulty: _difficultyToNumber(puzzle.difficulty),
+          description: 'Arrange the gradient shades.',
+          difficulty: _difficultyFromId(puzzle.id),
           boardColumns: puzzle.cols,
           boardRows: puzzle.rows,
           isUnlocked: puzzle.id <= 2,
@@ -77,16 +77,13 @@ class LocalLevelDataSource implements LevelDataSource {
     _puzzleCache = puzzles;
   }
 
-  int _difficultyToNumber(String difficulty) {
-    switch (difficulty) {
-      case 'easy':
-        return 1;
-      case 'medium':
-        return 2;
-      case 'hard':
-        return 3;
-      default:
-        return 1;
+  int _difficultyFromId(int id) {
+    if (id <= 10) {
+      return 1;
     }
+    if (id <= 30) {
+      return 2;
+    }
+    return 3;
   }
 }

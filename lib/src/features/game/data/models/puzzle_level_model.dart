@@ -3,11 +3,10 @@ class PuzzleLevelModel {
     required this.id,
     required this.rows,
     required this.cols,
-    required this.paletteId,
     required this.solution,
-    required this.fixedMask,
+    required this.anchors,
     required this.start,
-    required this.difficulty,
+    this.palette,
   });
 
   factory PuzzleLevelModel.fromJson(Map<String, dynamic> json) {
@@ -15,36 +14,22 @@ class PuzzleLevelModel {
       id: json['id'] as int,
       rows: json['rows'] as int,
       cols: json['cols'] as int,
-      paletteId: json['paletteId'] as String,
       solution: _convertColorMatrix(json['solution'] as List<dynamic>),
-      fixedMask: _convertBoolMatrix(json['fixedMask'] as List<dynamic>),
+      anchors: _convertBoolMatrix(json['anchors'] as List<dynamic>),
       start: _convertColorMatrix(json['start'] as List<dynamic>),
-      difficulty: json['difficulty'] as String,
+      palette: (json['palette'] as List<dynamic>?)?.cast<String>(),
     );
   }
 
   final int id;
   final int rows;
   final int cols;
-  final String paletteId;
   final List<List<String>> solution;
-  final List<List<bool>> fixedMask;
   final List<List<String>> start;
-  final String difficulty;
+  final List<List<bool>> anchors;
+  final List<String>? palette;
 
   String get levelId => 'level_$id';
-
-  Set<int> get anchorIndices {
-    final Set<int> indices = <int>{};
-    for (int r = 0; r < rows; r++) {
-      for (int c = 0; c < cols; c++) {
-        if (fixedMask[r][c]) {
-          indices.add(r * cols + c);
-        }
-      }
-    }
-    return indices;
-  }
 
   List<String> flattenSolution() => _flatten(solution);
 
