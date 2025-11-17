@@ -1,92 +1,41 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
-
+import '../../../../core/constants/app_constants.dart';
 import '../models/level_model.dart';
-import '../models/puzzle_level_model.dart';
 
 abstract class LevelDataSource {
   Future<List<LevelModel>> loadLevels();
   Future<void> persistProgress(List<LevelModel> levels);
-  Future<PuzzleLevelModel> loadPuzzle(String levelId);
 }
 
 class LocalLevelDataSource implements LevelDataSource {
-  LocalLevelDataSource({AssetBundle? bundle}) : _bundle = bundle ?? rootBundle;
+  LocalLevelDataSource();
 
-  static const String _assetPath = 'assets/data/puzzle_levels.json';
-  final AssetBundle _bundle;
-
-  List<LevelModel>? _levelsCache;
-  Map<String, PuzzleLevelModel>? _puzzleCache;
-  Future<void>? _initialization;
+  List<LevelModel> _cache = _seedLevels();
 
   @override
   Future<List<LevelModel>> loadLevels() async {
-    await _ensureLoaded();
-    return List<LevelModel>.unmodifiable(_levelsCache!);
-  }
-
-  @override
-  Future<PuzzleLevelModel> loadPuzzle(String levelId) async {
-    await _ensureLoaded();
-    final PuzzleLevelModel? puzzle = _puzzleCache![levelId];
-    if (puzzle == null) {
-      throw ArgumentError('Unknown level: $levelId');
-    }
-    return puzzle;
+    return List<LevelModel>.unmodifiable(_cache);
   }
 
   @override
   Future<void> persistProgress(List<LevelModel> levels) async {
-    _levelsCache = List<LevelModel>.from(levels);
+    _cache = List<LevelModel>.from(levels);
   }
+}
 
-  Future<void> _ensureLoaded() {
-    _initialization ??= _loadFromAsset();
-    return _initialization!;
-  }
-
-  Future<void> _loadFromAsset() async {
-    final String raw = await _bundle.loadString(_assetPath);
-    final Map<String, dynamic> decoded = jsonDecode(raw) as Map<String, dynamic>;
-    final List<dynamic> levelEntries = decoded['levels'] as List<dynamic>;
-
-    final List<LevelModel> levels = <LevelModel>[];
-    final Map<String, PuzzleLevelModel> puzzles = <String, PuzzleLevelModel>{};
-
-    for (final dynamic entry in levelEntries) {
-      final PuzzleLevelModel puzzle =
-          PuzzleLevelModel.fromJson(entry as Map<String, dynamic>);
-      final String levelId = puzzle.levelId;
-      puzzles[levelId] = puzzle;
-      levels.add(
-        LevelModel(
-          id: levelId,
-          title: 'Level ${puzzle.id}',
-          description: 'Restore palette ${puzzle.paletteId}.',
-          difficulty: _difficultyToNumber(puzzle.difficulty),
-          boardColumns: puzzle.cols,
-          boardRows: puzzle.rows,
-          isUnlocked: puzzle.id <= 2,
-        ),
-      );
-    }
-
-    _levelsCache = levels;
-    _puzzleCache = puzzles;
-  }
-
-  int _difficultyToNumber(String difficulty) {
-    switch (difficulty) {
-      case 'easy':
-        return 1;
-      case 'medium':
-        return 2;
-      case 'hard':
-        return 3;
-      default:
-        return 1;
-    }
-  }
+List<LevelModel> _seedLevels() {
+  const int totalLevels = 500;
+  return List<LevelModel>.generate(totalLevels, (int index) {
+    final int levelNumber = index + 1;
+    final bool isSecondLevel = levelNumber == 2;
+    return LevelModel(
+      id: 'level_$levelNumber',
+      title: 'Level $levelNumber',
+      description: 'Relax and solve puzzle $levelNumber.',
+      difficulty: 1 + (index ~/ 50),
+      boardColumns: AppConstants.defaultBoardColumns,
+      boardRows: isSecondLevel ? 7 : AppConstants.defaultBoardRows,
+      // Unlock the first two levels so level 2 is always available for tests.
+      isUnlocked: levelNumber <= 2,
+    );
+  });
 }
