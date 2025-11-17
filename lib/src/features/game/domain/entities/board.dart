@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:equatable/equatable.dart';
 
 import 'tile.dart';
@@ -7,23 +9,46 @@ class Board extends Equatable {
     required this.columns,
     required this.rows,
     required List<Tile> tiles,
+    required List<Color> solutionColors,
   })  : assert(columns > 0 && rows > 0),
         assert(columns * rows == tiles.length,
             'Tile count must match board dimensions'),
-        tiles = List<Tile>.unmodifiable(_sortByCurrentIndex(tiles));
+        assert(columns * rows == solutionColors.length,
+            'Solution must match board dimensions'),
+        tiles = List<Tile>.unmodifiable(_sortByCurrentIndex(tiles)),
+        solutionColors = List<Color>.unmodifiable(solutionColors);
 
   final int columns;
   final int rows;
   final List<Tile> tiles;
+  final List<Color> solutionColors;
 
   Tile tileAt(int index) => tiles[index];
 
-  bool isSolved() => tiles.every((Tile tile) => tile.isInCorrectPosition);
+  Color targetColorAt(int index) => solutionColors[index];
+
+  bool isSolved() {
+    for (final Tile tile in tiles) {
+      final Color expected = solutionColors[tile.currentIndex];
+      if (tile.color.value != expected.value) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   int countMisplacedTiles({bool includeAnchors = false}) {
-    return tiles
-        .where((Tile tile) => (includeAnchors || !tile.isAnchor) && !tile.isInCorrectPosition)
-        .length;
+    int count = 0;
+    for (final Tile tile in tiles) {
+      if (!includeAnchors && tile.isAnchor) {
+        continue;
+      }
+      final Color expected = solutionColors[tile.currentIndex];
+      if (tile.color.value != expected.value) {
+        count++;
+      }
+    }
+    return count;
   }
 
   List<Tile> get anchors =>
@@ -37,11 +62,12 @@ class Board extends Equatable {
       columns: columns,
       rows: rows,
       tiles: tiles ?? this.tiles,
+      solutionColors: solutionColors,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[columns, rows, tiles];
+  List<Object?> get props => <Object?>[columns, rows, tiles, solutionColors];
 }
 
 List<Tile> _sortByCurrentIndex(List<Tile> tiles) {

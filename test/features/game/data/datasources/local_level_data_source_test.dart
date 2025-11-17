@@ -23,6 +23,8 @@ void main() {
     expect(puzzle.cols, firstLevel.boardColumns);
     expect(puzzle.rows, firstLevel.boardRows);
     expect(puzzle.flattenStart(), isNot(equals(puzzle.flattenSolution())));
-    expect(puzzle.anchorIndices, contains(0));
+    final bool hasAnchors =
+        puzzle.anchors.any((List<bool> row) => row.any((bool cell) => cell));
+    expect(hasAnchors, isTrue);
   });
 }

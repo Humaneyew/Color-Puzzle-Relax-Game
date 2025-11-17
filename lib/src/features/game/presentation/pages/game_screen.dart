@@ -353,9 +353,9 @@ class _SolvedBoardPoster extends StatelessWidget {
               child: ClipRect(
                 child: Stack(
                   fit: StackFit.expand,
-                  children: board.tiles.map((Tile tile) {
-                    final int row = tile.correctIndex ~/ columns;
-                    final int column = tile.correctIndex % columns;
+                  children: List<Widget>.generate(board.tiles.length, (int index) {
+                    final int row = index ~/ columns;
+                    final int column = index % columns;
                     final double left = column * tileSize;
                     final double top = row * tileSize;
                     final double width =
@@ -367,9 +367,9 @@ class _SolvedBoardPoster extends StatelessWidget {
                       top: top,
                       width: width,
                       height: height,
-                      child: ColoredBox(color: tile.color),
+                      child: ColoredBox(color: board.targetColorAt(index)),
                     );
-                  }).toList(),
+                  }),
                 ),
               ),
             ),
