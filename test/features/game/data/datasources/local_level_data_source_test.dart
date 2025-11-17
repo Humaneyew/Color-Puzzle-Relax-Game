@@ -1,22 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:color_puzzle_relax_game/src/core/constants/app_constants.dart';
 import 'package:color_puzzle_relax_game/src/features/game/data/datasources/local_level_data_source.dart';
 
 void main() {
-  test('second level uses a 5x7 board configuration', () async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('loads curated puzzle data from assets', () async {
     final LocalLevelDataSource dataSource = LocalLevelDataSource();
 
     final levels = await dataSource.loadLevels();
-
-    expect(levels, isNotEmpty);
+    expect(levels.length, 50);
 
     final firstLevel = levels.first;
-    expect(firstLevel.boardColumns, AppConstants.defaultBoardColumns);
-    expect(firstLevel.boardRows, AppConstants.defaultBoardRows);
+    expect(firstLevel.boardColumns, 7);
+    expect(firstLevel.boardRows, 3);
 
     final secondLevel = levels[1];
-    expect(secondLevel.boardColumns, AppConstants.defaultBoardColumns);
-    expect(secondLevel.boardRows, 7);
+    expect(secondLevel.boardColumns, 5);
+    expect(secondLevel.boardRows, 5);
+
+    final puzzle = await dataSource.loadPuzzle(firstLevel.id);
+    expect(puzzle.cols, firstLevel.boardColumns);
+    expect(puzzle.rows, firstLevel.boardRows);
+    expect(puzzle.flattenStart(), isNot(equals(puzzle.flattenSolution())));
+    expect(puzzle.anchorIndices, contains(0));
   });
 }
