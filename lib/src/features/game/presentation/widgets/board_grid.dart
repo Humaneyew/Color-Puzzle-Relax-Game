@@ -37,66 +37,47 @@ class _BoardGridState extends State<BoardGrid> {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth;
         final double maxHeight = constraints.maxHeight;
-        final int gridWidth = widget.board.width;
-        final int gridHeight = widget.board.height;
+        final int gridSize = widget.board.size;
 
         final bool hasFiniteWidth = maxWidth.isFinite;
         final bool hasFiniteHeight = maxHeight.isFinite;
 
-        final double widthConstraint =
-            hasFiniteWidth ? math.max(maxWidth, 0) : double.infinity;
-        final double heightConstraint =
-            hasFiniteHeight ? math.max(maxHeight, 0) : double.infinity;
+        final double fallbackExtent = gridSize.toDouble();
 
-        final double widthPerTile = gridWidth > 0 && widthConstraint.isFinite
-            ? widthConstraint / gridWidth
-            : double.infinity;
-        final double heightPerTile = gridHeight > 0 && heightConstraint.isFinite
-            ? heightConstraint / gridHeight
-            : double.infinity;
-        final double tileExtent = math.min(widthPerTile, heightPerTile);
-        final double resolvedTileExtent =
-            tileExtent.isFinite && tileExtent > 0 ? tileExtent : 1.0;
+        final double availableWidth = hasFiniteWidth
+            ? math.max(maxWidth, 0)
+            : (hasFiniteHeight ? math.max(maxHeight, 0) : fallbackExtent);
+        final double availableHeight = hasFiniteHeight
+            ? math.max(maxHeight, 0)
+            : (hasFiniteWidth ? math.max(maxWidth, 0) : fallbackExtent);
 
-        final double tileWidth = gridWidth == 0 ? 0 : resolvedTileExtent;
-        final double tileHeight = gridHeight == 0 ? 0 : resolvedTileExtent;
-        final double boardWidth = tileWidth * gridWidth;
-        final double boardHeight = tileHeight * gridHeight;
-
-        final double outerWidth =
-            hasFiniteWidth ? widthConstraint : boardWidth;
-        final double outerHeight =
-            hasFiniteHeight ? heightConstraint : boardHeight;
+        final double tileWidth = availableWidth / gridSize;
+        final double tileHeight = availableHeight / gridSize;
+        final double boardWidth = tileWidth * gridSize;
+        final double boardHeight = tileHeight * gridSize;
 
         return SizedBox(
-          width: outerWidth,
-          height: outerHeight,
-          child: Align(
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: boardWidth,
-              height: boardHeight,
-              child: Stack(
-                children: widget.board.tiles.map((Tile tile) {
-                  return _AnimatedTile(
-                    key: ValueKey<int>(tile.correctIndex),
-                    tile: tile,
-                    tileWidth: tileWidth,
-                    tileHeight: tileHeight,
-                    gridWidth: widget.board.width,
-                    controller: widget.controller,
-                    disableInteractions:
-                        widget.disableInteractions || widget.controller.isLocked,
-                    reducedMotion: reducedMotion,
-                    swapDuration: swapDuration,
-                    hoverIndex: _hoverIndex,
-                    draggingIndex: _draggingIndex,
-                    onHoverChanged: _handleHoverChanged,
-                    onDragChanged: _handleDragChanged,
-                  );
-                }).toList(),
-              ),
-            ),
+          width: hasFiniteWidth ? availableWidth : boardWidth,
+          height: hasFiniteHeight ? availableHeight : boardHeight,
+          child: Stack(
+            children: widget.board.tiles.map((Tile tile) {
+              return _AnimatedTile(
+                key: ValueKey<int>(tile.correctIndex),
+                tile: tile,
+                tileWidth: tileWidth,
+                tileHeight: tileHeight,
+                gridSize: widget.board.size,
+                controller: widget.controller,
+                disableInteractions:
+                    widget.disableInteractions || widget.controller.isLocked,
+                reducedMotion: reducedMotion,
+                swapDuration: swapDuration,
+                hoverIndex: _hoverIndex,
+                draggingIndex: _draggingIndex,
+                onHoverChanged: _handleHoverChanged,
+                onDragChanged: _handleDragChanged,
+              );
+            }).toList(),
           ),
         );
       },
@@ -130,7 +111,7 @@ class _AnimatedTile extends StatelessWidget {
     required this.tile,
     required this.tileWidth,
     required this.tileHeight,
-    required this.gridWidth,
+    required this.gridSize,
     required this.controller,
     required this.disableInteractions,
     required this.reducedMotion,
@@ -144,7 +125,7 @@ class _AnimatedTile extends StatelessWidget {
   final Tile tile;
   final double tileWidth;
   final double tileHeight;
-  final int gridWidth;
+  final int gridSize;
   final BoardController controller;
   final bool disableInteractions;
   final bool reducedMotion;
@@ -156,8 +137,8 @@ class _AnimatedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int row = gridWidth == 0 ? 0 : tile.currentIndex ~/ gridWidth;
-    final int column = gridWidth == 0 ? 0 : tile.currentIndex % gridWidth;
+    final int row = tile.currentIndex ~/ gridSize;
+    final int column = tile.currentIndex % gridSize;
     final double top = row * tileHeight;
     final double left = column * tileWidth;
 
